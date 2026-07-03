@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>マイ株価ダッシュボード</title>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --sub: #8b949e;
+    --accent: #58a6ff;
+    --pick: #d29922;
+    --danger: #f85149;
+    --up: #3fb950;
+    --down: #f85149;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Hiragino Sans", "Yu Gothic", -apple-system, sans-serif;
+    padding-bottom: 40px;
+  }
+  header {
+    padding: 20px 24px 8px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  header h1 { font-size: 22px; }
+  header .date { color: var(--sub); font-size: 14px; }
+  .toolbar { margin-left: auto; display: flex; gap: 8px; }
+  .btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+  #addPanel {
+    display: none;
+    max-width: 1800px;
+    margin: 0 auto 16px;
+    padding: 14px 24px;
+  }
+  #addPanel.show { display: block; }
+  #addPanel .panel-inner {
+    background: var(--card);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  #addPanel input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  #addPanel input:focus { outline: none; border-color: var(--accent); }
+  #addPanel .hint { width: 100%; font-size: 12px; color: var(--sub); line-height: 1.6; }
+
+  .tape { border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+    gap: 16px;
+    padding: 0 24px;
+    max-width: 1800px;
+    margin: 0 auto;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .card.dragover { border-color: var(--accent); }
+  .card .head {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px 4px 14px;
+    gap: 4px;
+  }
+  .card .head .title { font-size: 15px; font-weight: 600; flex: 1; cursor: grab; }
+  .card .head .title small { color: var(--sub); font-weight: 400; margin-left: 8px; }
+  .card .ctl {
+    background: none;
+    border: none;
+    color: var(--sub);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 7px;
+    border-radius: 6px;
+    line-height: 1;
+  }
+  .card .ctl:hover { background: var(--bg); color: var(--accent); }
+  .card .ctl.del:hover { color: var(--danger); }
+  .card .chart { height: 400px; }
+  .card.pick { border-color: var(--pick); grid-column: 1 / -1; }
+  .card.pick .head .title { color: var(--pick); cursor: default; }
+  .card .lesson, .card .memo-body {
+    padding: 4px 14px 12px;
+    font-size: 13px;
+    color: var(--sub);
+    line-height: 1.7;
+  }
+  details.memo { border-top: 1px solid var(--border); }
+  details.memo summary {
+    cursor: pointer;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--accent);
+    user-select: none;
+    list-style: none;
+  }
+  details.memo summary::before { content: "▸ "; }
+  details.memo[open] summary::before { content: "▾ "; }
+  .memo-body b { color: var(--text); }
+
+  /* 東証銘柄用チャート */
+  .chart.jp { display: flex; flex-direction: column; }
+  .jp-head { display: flex; align-items: baseline; gap: 10px; padding: 6px 14px 0; flex-wrap: wrap; }
+  .jp-price { font-size: 22px; font-weight: 700; }
+  .jp-change { font-size: 13px; }
+  .jp-change.up { color: var(--up); }
+  .jp-change.down { color: var(--down); }
+  .jp-note { font-size: 11px; color: var(--sub); }
+  .jp-mkt { font-size: 11px; color: var(--sub); display: inline-flex; align-items: center; gap: 5px; }
+  .jp-mkt .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .jp-mkt.open { color: var(--up); }
+  .jp-mkt.open .dot { background: var(--up); box-shadow: 0 0 6px var(--up); }
+  .jp-mkt.lunch { color: #d29922; }
+  .jp-mkt.lunch .dot { background: #d29922; }
+  .jp-mkt.closed { color: var(--sub); }
+  .jp-ranges { display: flex; gap: 4px; padding: 6px 10px 2px; }
+  .jp-ranges button {
+    background: none;
+    border: none;
+    color: var(--sub);
+    font-size: 12px;
+    padding: 4px 9px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .jp-ranges button:hover { color: var(--text); }
+  .jp-ranges button.active { background: var(--bg); color: var(--text); font-weight: 600; }
+  .jp-canvas { flex: 1; min-height: 0; }
+
+  .overview {
+    grid-column: 1 / -1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--sub);
+  }
+  .overview h2 { font-size: 15px; color: var(--text); margin-bottom: 6px; }
+  .overview b { color: var(--text); }
+  .section-title {
+    max-width: 1800px;
+    margin: 28px auto 12px;
+    padding: 0 24px;
+    font-size: 17px;
+  }
+  .news {
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 0 24px;
+    height: 500px;
+  }
+  footer {
+    padding: 24px;
+    color: var(--sub);
+    font-size: 12px;
+    line-height: 1.7;
+    max-width: 1800px;
+    margin: 0 auto;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    color: var(--pick);
+    border: 1px solid var(--pick);
+    border-radius: 20px;
+    padding: 1px 8px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  @media (max-width: 560px) {
+    .grid { grid-template-columns: 1fr; padding: 0 10px; }
+    header { padding: 14px 12px 6px; }
+    .toolbar { margin-left: 0; }
+    .card .chart { height: 340px; }
+    .news, .section-title { padding: 0 12px; }
+    footer { padding: 16px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📈 マイ株価ダッシュボード</h1>
+  <span class="date" id="today"></span>
+  <div class="toolbar">
+    <button class="btn" id="addBtn">＋ 銘柄を追加</button>
+    <button class="btn danger" id="resetBtn">初期設定に戻す</button>
+  </div>
+</header>
+
+<div id="addPanel">
+  <div class="panel-inner">
+    <input id="inName" placeholder="表示名（例: ソニー）" size="20">
+    <input id="inSymbol" placeholder="シンボル（例: TSE:6758）" size="24" list="symList">
+    <datalist id="symList">
+      <option value="TSE:6758">ソニーG</option>
+      <option value="TSE:9984">ソフトバンクG</option>
+      <option value="TSE:8306">三菱UFJ</option>
+      <option value="TSE:7203">トヨタ</option>
+      <option value="TSE:6861">キーエンス</option>
+      <option value="TSE:8035">東京エレクトロン</option>
+      <option value="TSE:1306">TOPIX ETF</option>
+      <option value="TSE:1655">S&P500円建てETF</option>
+      <option value="NASDAQ:AAPL">アップル</option>
+      <option value="NASDAQ:NVDA">NVIDIA</option>
+      <option value="NASDAQ:MSFT">マイクロソフト</option>
+      <option value="NASDAQ:TSLA">テスラ</option>
+      <option value="NASDAQ:GOOGL">アルファベット</option>
+      <option value="NASDAQ:AMZN">アマゾン</option>
+      <option value="NASDAQ:META">メタ</option>
+      <option value="AMEX:GLD">金ETF</option>
+      <option value="FOREXCOM:US30">NYダウ CFD</option>
+      <option value="FX_IDC:USDJPY">ドル円</option>
+      <option value="BITSTAMP:BTCUSD">ビットコイン</option>
+    </datalist>
+    <button class="btn" id="confirmAdd">追加する</button>
+    <button class="btn" id="cancelAdd">キャンセル</button>
+    <div class="hint">
+      形式は「取引所:ティッカー」。<b style="color:var(--text)">東証銘柄は TSE:4桁コード（例: 任天堂→TSE:7974）でOK</b>──Yahoo Financeから自動取得します。
+      米国株は NASDAQ:xxx / NYSE:xxx / AMEX:xxx、指数はCFD（FOREXCOM:SPXUSD, FOREXCOM:JP225 等）。
+      シンボルは <a href="https://jp.tradingview.com/" target="_blank" style="color:var(--accent)">TradingView</a> や <a href="https://finance.yahoo.co.jp/" target="_blank" style="color:var(--accent)">Yahoo!ファイナンス</a> で検索できます。
+    </div>
+  </div>
+</div>
+
+<!-- ティッカーテープ -->
+<div class="tape">
+  <div class="tradingview-widget-container">
+    <div class="tradingview-widget-container__widget"></div>
+    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+    {
+      "symbols": [
+        {"proName": "FOREXCOM:SPXUSD", "title": "S&P500"},
+        {"proName": "FOREXCOM:NSXUSD", "title": "NASDAQ100"},
+        {"proName": "FOREXCOM:JP225", "title": "日経225"},
+        {"proName": "NASDAQ:SPCX", "title": "SpaceX"},
+        {"proName": "OTC:NTDOY", "title": "任天堂ADR"},
+        {"proName": "FX_IDC:USDJPY", "title": "ドル円"}
+      ],
+      "showSymbolLogo": true,
+      "colorTheme": "dark",
+      "isTransparent": true,
+      "displayMode": "adaptive",
+      "locale": "ja"
+    }
+    </script>
+  </div>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<h2 class="section-title">📰 マーケットニュース（自動更新）— 大きな値動きの理由はまずここをチェック</h2>
+<div class="news">
+  <div class="tradingview-widget-container" style="height:100%">
+    <div class="tradingview-widget-container__widget" style="height:100%"></div>
+    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-timeline.js" async>
+    {
+      "feedMode": "market",
+      "market": "stock",
+      "colorTheme": "dark",
+      "isTransparent": true,
+      "displayMode": "regular",
+      "width": "100%",
+      "height": "100%",
+      "locale": "ja"
+    }
+    </script>
+  </div>
+</div>
+
+<footer>
+  ※ <b style="color:var(--text)">東証銘柄（TSE:xxxx）はYahoo Financeの株価データを自前チャートで表示</b>しています（円建て・約20分遅延の場合あり。無料の中継サーバー経由のため、まれに取得に失敗することがあります。その場合は少し待って再読み込みを）。株式分割による段差は自動調整。<br>
+  ※ 米国株・指数はTradingViewの埋め込みチャート（指数はCFD価格: S&P500=SPXUSD、日経平均=JP225等）。チャート内のボタンで時間幅を切替できます（1日 / 1ヶ月 / 3ヶ月 / 1年 / 5年 / 全期間）。<br>
+  ※ 銘柄の追加・削除・並べ替え（タイトルをドラッグ or ◀▶ボタン）はこのブラウザに保存されます。別の端末・ブラウザで開くと初期設定に戻ります。<br>
+  ※ 「展望と考察」メモは毎朝の定期タスクで自動更新されます。「今日の学び銘柄」は教育用の日替わりローテーションであり、投資推奨ではありません。投資判断はご自身で。
+</footer>
+
+<script>
+/* ===== ANALYSIS_START =====
+   このブロックは毎朝の定期タスク（Claude）が最新の相場情報で書き換える。
+   形式: ANALYSIS.asof = "YYYY/M/D"、market = 全体見通しHTML、
+   items = シンボル→{outlook, note}。HTMLタグは <b> と <br> と <a> のみ使用。 */
+const ANALYSIS = {
+  asof: "2026/7/2",
+  market: `<b>米国株:</b> 2026年通年のEPS成長は約23%見込みと非常に強く、ウォール街は年末までさらに+5%程度を予想。AI設備投資（大手クラウドで約6,700億ドル）が利益成長の約4割を占める。最大のリスクはインフレ再加速による金利高止まりとエネルギー価格。<br>
+<b>日本株:</b> 野村は日経平均2026年末68,000円（上振れで7万円台）に上方修正。AI・半導体企業の経常利益は2026年度に倍増見込み。ただし2026年後半は米ハイパースケーラー投資の伸び率鈍化に注意。<br>
+<b>見方のコツ:</b> 大きな変動が起きた日は、①金利（米10年債利回り）②大手テックの決算・AI関連ニュース ③為替 ④地政学、の順に原因を探すとだいたい説明がつく。下のニュース欄も自動更新される。`,
+  items: {
+    "TSE:2559": {
+      outlook: "<b>展望:</b> オルカンと同じMSCI ACWI指数に連動する東証ETF（円建て）なので、値動きはオルカン基準価額とほぼ同じ。世界株の6割超は米国株で、実質は米国のAI相場と金利次第。2026年は米企業のEPS成長が20%超と強く、世界株も堅調が続くとの見方が主流。円建てなのでドル円の影響も込みで見られる。",
+      note: "<b>考察のポイント:</b> オルカンが大きく動く日は「米国株が動いた」か「為替が動いた」のどちらか。米国ETFのVT（ドル建て）と見比べると、どちらが原因か切り分けられる。"
+    },
+    "FOREXCOM:SPXUSD": {
+      outlook: "<b>展望:</b> ウォール街のコンセンサスは年末までさらに+5%程度の上昇。アナリストの12ヶ月ボトムアップ目標は8,918（6/25時点）。2026年通年のEPS成長予想は約23%と2021年以来の高水準で、AI投資（大手クラウド4社の設備投資 約6,700億ドル）が利益成長の約4割を牽引。",
+      note: "<b>リスク要因:</b> インフレ再加速と雇用の強さでFRBの年後半利下げは期待薄。エネルギー価格上昇が金利を押し上げれば調整のきっかけに。大きく下げた日は「金利上昇」「AI関連決算ミス」「地政学（中東等）」のどれかをまず疑う。"
+    },
+    "FOREXCOM:NSXUSD": {
+      outlook: "<b>展望:</b> AI設備投資ブームの中心で、S&P500より値動きが増幅されやすい。2026年後半はハイパースケーラーの投資額の「伸び率」が鈍化する見通しで、成長株の評価が金利と期待のバランスで揺れやすい局面。",
+      note: "<b>考察のポイント:</b> NASDAQ100の急変動はほぼ「大手テック決算」「金利（10年債利回り）」「AI関連ニュース」の3つで説明できる。SOXLの学びメモとも連動して見ると理解が深まる。"
+    },
+    "FOREXCOM:JP225": {
+      outlook: "<b>展望:</b> 野村證券は2026年末目標を68,000円へ上方修正（AI・半導体企業の業績急拡大を反映、上振れなら7万円台も）。三井住友DSは61,500円予想。半導体・データセンター関連が牽引役。",
+      note: "<b>考察のポイント:</b> 日経平均は半導体株の指数寄与が大きく、米SOX指数と前日の米株に連動しやすい。急変動時は「前日の米ハイテク」「ドル円」「半導体大手の材料」を順にチェック。円高は輸出株を通じて下押し要因。"
+    },
+    "TSE:7974": {
+      outlook: "<b>展望:</b> Switch 2は初年度1,986万台と記録的な売れ行きで売上は約2倍の2.3兆円。ただし会社側は2027年3月期を減収減益（売上-11%、純利益-27%）と保守的に見ており、値上げ（日本では59,980円に）後の普及ペースと、ホリデー商戦のソフトラインナップが焦点。",
+      note: "<b>直近の大変動の考察:</b> 株価は2025年8月の高値14,795円から2026年5月に7,000円割れまで約半値に下落。①爆売れでも利益率が24.3%→15.6%に低下（逆ザヤ気味の本体販売）、②減収減益ガイダンス、③メモリ高騰・関税で約1,000億円のコスト増、④値上げによる需要鈍化懸念が重なったのが理由。「売上倍増なのに株価半値」は業績と期待値の差を学ぶ好例。"
+    },
+    "NASDAQ:SPCX": {
+      outlook: "<b>展望:</b> 6/12にIPO（公開価格$135、調達額750億ドルは史上最大）。時価総額は約2.2兆ドルとテスラ超え。Wedbushは「アウトパフォーム」目標$190でカバー開始（Starlink・Starship・AIデータセンターが評価軸）。ただし直近通期は約49億ドルの赤字で、株価は完全に将来期待で形成されている。<b>8/6予定の上場後初決算</b>が最初の大きな試金石。",
+      note: "<b>直近の大変動の考察:</b> 上場直後に$225.64（6/16）まで急騰後、$147.11（6/23）まで約-28%の急落。①浮動株が全体の3〜4%しかなく需給が極端に薄い、②初期の熱狂の反動と利益確定、③今後のロックアップ解除（大株主の売却解禁）への警戒が理由。IPO直後の銘柄は値動きが荒いことを学ぶ生きた教材。"
+    }
+  }
+};
+/* ===== ANALYSIS_END ===== */
+
+const LS_KEY = "myStockDashboard_symbols_v1";
+
+// ===== 初期銘柄 =====
+const DEFAULTS = [
+  { name: "オルカン（連動ETF: MAXIS全世界株式）", symbol: "TSE:2559" },
+  { name: "S&P500", symbol: "FOREXCOM:SPXUSD" },
+  { name: "NASDAQ100", symbol: "FOREXCOM:NSXUSD" },
+  { name: "日経平均", symbol: "FOREXCOM:JP225" },
+  { name: "任天堂", symbol: "TSE:7974" },
+  { name: "SpaceX", symbol: "NASDAQ:SPCX" }
+];
+
+// ===== 日替わり「学び銘柄」ローテーション =====
+const ROTATION = [
+  { name: "SOXL（半導体ブル3倍）", symbol: "AMEX:SOXL",
+    lesson: "半導体指数の日次値動きを3倍にするレバレッジETF。上昇局面では爆発力がある一方、横ばい相場では「減価」で目減りする。ボラティリティ・ドラッグの教材として最適。2026年後半はAI投資の伸び率鈍化が焦点。" },
+  { name: "SOXS（半導体ベア3倍）", symbol: "AMEX:SOXS",
+    lesson: "SOXLの逆で、半導体指数の下落で儲かるインバースETF。長期保有すると減価でほぼ確実に目減りするため、短期ヘッジ専用。SOXLと長期チャートを見比べると「両方右肩下がり」という面白い現象が見える。" },
+  { name: "VT（全世界株・米国籍版）", symbol: "AMEX:VT",
+    lesson: "オルカンの米国ETF版。中身はほぼ同じ全世界株なのに、ドル建てのVTと円建ての2559ではチャートの形が違う。その差が「為替の影響」そのもの。" },
+  { name: "VYM（米国高配当株）", symbol: "AMEX:VYM",
+    lesson: "配当利回りの高い米国株を集めたETF。値上がり益重視のNASDAQ100と比べ、下落相場に強く動きがマイルド。インカム投資とグロース投資の性格の違いを学べる。" },
+  { name: "SCHD（米国連続増配株）", symbol: "AMEX:SCHD",
+    lesson: "10年以上増配を続ける優良企業を集めたETF。「高配当」と「増配」の違いがポイント。VYMとの比較で配当戦略の奥深さがわかる。" },
+  { name: "GLD（金）", symbol: "AMEX:GLD",
+    lesson: "金価格に連動するETF。株が暴落する局面で逆に買われることが多い「安全資産」。株式チャートと重ねて見ると分散投資の意味が実感できる。" },
+  { name: "TLT（米国20年超長期債）", symbol: "NASDAQ:TLT",
+    lesson: "米長期国債のETF。金利が上がると価格が下がる「逆相関」が債券の基本。2026年はインフレ再加速で利下げ観測が後退しており、金利と債券価格の関係を学ぶ好機。" },
+  { name: "2621（米国債20年超・為替ヘッジあり）", symbol: "TSE:2621",
+    lesson: "TLTの円建て・為替ヘッジ付き版の東証ETF。TLTと見比べると「為替ヘッジコスト」の重さがわかる。日米金利差が大きい時期はヘッジコストだけで年数%削られる。" },
+  { name: "IBIT（ビットコインETF）", symbol: "NASDAQ:IBIT",
+    lesson: "現物ビットコインに連動するブラックロックのETF。株式と全く違う値動きの荒さとリスク・リターンの関係を学べる。" },
+  { name: "SMH（半導体・現物1倍）", symbol: "NASDAQ:SMH",
+    lesson: "NVIDIAやTSMCを含む半導体ETF。レバレッジなしの1倍。SOXL/SOXSと同じ指数系なのに長期リターンが全然違う理由（減価の有無）を比較すると勉強になる。" },
+  { name: "XLE（米国エネルギーセクター）", symbol: "AMEX:XLE",
+    lesson: "石油メジャー中心のセクターETF。原油価格とインフレに連動しやすく、ハイテクと逆に動く局面も多い。2026年のエネルギー高はFRBの利下げを妨げる要因でもあり、市場全体との関係を学べる。" },
+  { name: "VWO（新興国株）", symbol: "AMEX:VWO",
+    lesson: "中国・インド・ブラジルなど新興国のETF。オルカンの約1割はこれ。成長率は高いのにリターンが伴わない時期も長い、というギャップが学べる。" },
+  { name: "1306（TOPIX連動ETF）", symbol: "TSE:1306",
+    lesson: "日本株全体（TOPIX）に連動する日本最大級の東証ETF。日経平均が「225社の株価平均」なのに対しTOPIXは「時価総額加重」。2つの指数の違いを比べる教材に。" },
+  { name: "1655（S&P500・円建てETF）", symbol: "TSE:1655",
+    lesson: "S&P500に円建てで投資できる東証ETF。本家SPXのチャートと形が微妙に違うのは為替の影響。円安の年は指数以上に儲かり、円高の年は逆になる。" },
+  { name: "EWJ（日本株・ドル建て）", symbol: "AMEX:EWJ",
+    lesson: "海外投資家から見た日本株。日経平均と形が違うのは為替の影響で、円安の年は日本人が儲かっても海外勢はそうでもない、という視点の違いが学べる。" },
+  { name: "RSP（S&P500均等加重）", symbol: "AMEX:RSP",
+    lesson: "S&P500の500社を全て同じ比率で持つETF。通常のS&P500（時価総額加重）との差は「大型テック集中度」そのもの。この差が開くほどAI相場の一極集中が進んでいるサイン。" },
+  { name: "ARKK（イノベーション株）", symbol: "CBOE:ARKK",
+    lesson: "破壊的イノベーション企業に集中投資するアクティブETF。上場したSpaceX(SPCX)を約4.5%保有。ハイリスク・ハイリターンなテーマ投資の値動きの荒さを学べる。" }
+];
+
+// ===== 銘柄リストの読み書き（このブラウザに保存） =====
+function loadList() {
+  try {
+    const s = JSON.parse(localStorage.getItem(LS_KEY));
+    if (Array.isArray(s) && s.length) return s;
+  } catch (e) {}
+  return DEFAULTS.map(d => ({ name: d.name, symbol: d.symbol }));
+}
+function saveList() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(list)); } catch (e) {}
+}
+let list = loadList();
+
+const now = new Date();
+const dayIndex = Math.floor(now.getTime() / 86400000);
+const pick = ROTATION[dayIndex % ROTATION.length];
+
+document.getElementById("today").textContent =
+  now.toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "short" });
+
+const grid = document.getElementById("grid");
+
+// ===== 東証の開場・閉場ステータス =====
+function jstParts(date = new Date()) {
+  const p = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Tokyo", hour12: false,
+    weekday: "short", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric"
+  }).formatToParts(date);
+  const g = t => p.find(x => x.type === t).value;
+  const dowMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  return { y: +g("year"), m: +g("month"), d: +g("day"), dow: dowMap[g("weekday")], min: (+g("hour") % 24) * 60 + +g("minute") };
+}
+const dowOf = (y, m, d) => new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+function jpBaseHoliday(y, m, d) {
+  const dow = dowOf(y, m, d);
+  const week = Math.ceil(d / 7);
+  if (m === 1 && d === 1) return true;
+  if (m === 1 && dow === 1 && week === 2) return true;
+  if (m === 2 && (d === 11 || d === 23)) return true;
+  const shunbun = Math.floor(20.8431 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
+  if (m === 3 && d === shunbun) return true;
+  if (m === 4 && d === 29) return true;
+  if (m === 5 && (d === 3 || d === 4 || d === 5)) return true;
+  if (m === 7 && dow === 1 && week === 3) return true;
+  if (m === 8 && d === 11) return true;
+  if (m === 9 && dow === 1 && week === 3) return true;
+  const shubun = Math.floor(23.2488 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4));
+  if (m === 9 && d === shubun) return true;
+  if (m === 10 && dow === 1 && week === 2) return true;
+  if (m === 11 && (d === 3 || d === 23)) return true;
+  return false;
+}
+function isJpHoliday(y, m, d) {
+  if (jpBaseHoliday(y, m, d)) return true;
+  if (dowOf(y, m, d) >= 1) {
+    let t = Date.UTC(y, m - 1, d);
+    for (;;) {
+      t -= 86400000;
+      const dd = new Date(t);
+      if (!jpBaseHoliday(dd.getUTCFullYear(), dd.getUTCMonth() + 1, dd.getUTCDate())) return false;
+      if (dd.getUTCDay() === 0) return true;
+    }
+  }
+  return false;
+}
+function jpMarketStatus(date) {
+  const { y, m, d, dow, min } = jstParts(date);
+  if (dow === 0 || dow === 6) return { state: "closed", label: "閉場（土日）" };
+  if ((m === 12 && d === 31) || (m === 1 && (d === 2 || d === 3))) return { state: "closed", label: "閉場（年末年始）" };
+  if (isJpHoliday(y, m, d)) return { state: "closed", label: "閉場（祝日）" };
+  if (min < 540) return { state: "closed", label: "閉場（9:00 開場）" };
+  if (min < 690) return { state: "open", label: "取引時間中（〜11:30）" };
+  if (min < 750) return { state: "lunch", label: "昼休み（12:30 再開）" };
+  if (min < 930) return { state: "open", label: "取引時間中（〜15:30）" };
+  return { state: "closed", label: "取引終了（翌営業日 9:00）" };
+}
+function updateJpMkts() {
+  const s = jpMarketStatus();
+  document.querySelectorAll(".jp-mkt").forEach(el => {
+    el.className = "jp-mkt " + s.state;
+    el.innerHTML = (s.state === "closed" ? "🌙 " : "<span class='dot'></span>") + s.label;
+  });
+}
+setInterval(updateJpMkts, 30000);
+
+// ===== 東証銘柄: Yahoo Finance + Lightweight Charts =====
+const JP_RANGES = [
+  { label: "1日",   range: "1d",  interval: "5m"  },
+  { label: "1ヶ月", range: "1mo", interval: "1d"  },
+  { label: "3ヶ月", range: "3mo", interval: "1d"  },
+  { label: "1年",   range: "1y",  interval: "1d"  },
+  { label: "5年",   range: "5y",  interval: "1wk" },
+  { label: "全期間", range: "max", interval: "1mo" }
+];
+
+// 無料CORS中継サーバー群（不安定なので多重化: 4系統×2周 + タイムアウト + 別データ源 + キャッシュ）
+const JP_PROXIES = [
+  u => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
+  u => "https://proxy.cors.sh/" + u,
+  u => "https://corsproxy.io/?url=" + encodeURIComponent(u),
+  u => "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(u)
+];
+function fetchTimeout(url, ms) {
+  const ctl = new AbortController();
+  const id = setTimeout(() => ctl.abort(), ms);
+  return fetch(url, { signal: ctl.signal }).finally(() => clearTimeout(id));
+}
+// 同時リクエストで中継サーバーに弾かれないよう直列化
+let jpQueue = Promise.resolve();
+function jpEnqueue(fn) { const p = jpQueue.then(fn, fn); jpQueue = p.catch(() => {}); return p; }
+const jpSleep = ms => new Promise(r => setTimeout(r, ms));
+
+// 株式分割による価格の段差を検出して過去分を遡及調整（Yahooの生値は分割未調整のため）
+function splitAdjust(points) {
+  if (points.length < 3) return points;
+  const vals = points.map(p => p.value);
+  const adj = vals.slice();
+  let f = 1;
+  const CAND = [];
+  for (let n = 2; n <= 30; n++) { CAND.push(n); CAND.push(1 / n); }
+  for (let i = vals.length - 1; i >= 1; i--) {
+    adj[i] = vals[i] * f;
+    const r = vals[i - 1] / vals[i];
+    if (r > 1.8 || r < 0.55) {
+      let best = r, bd = Infinity;
+      for (const c of CAND) {
+        const d = Math.abs(Math.log(r / c));
+        if (d < bd) { bd = d; best = c; }
+      }
+      f = f / (bd < 0.2 ? best : r);
+    }
+  }
+  adj[0] = vals[0] * f;
+  return points.map((p, i) => ({ time: p.time, value: adj[i] }));
+}
+
+async function tryYahoo(code, range, interval) {
+  const target = `https://query1.finance.yahoo.com/v8/finance/chart/${code}.T?range=${range}&interval=${interval}`;
+  for (let round = 0; round < 2; round++) {
+    for (const p of JP_PROXIES) {
+      try {
+        const r = await fetchTimeout(p(target), 8000);
+        if (!r.ok) continue;
+        const j = await r.json();
+        const res = j.chart && j.chart.result && j.chart.result[0];
+        if (!res || !res.timestamp) continue;
+        const closes = res.indicators.quote[0].close;
+        let points = res.timestamp
+          .map((t, i) => ({ time: t, value: closes[i] }))
+          .filter(x => x.value != null);
+        if (interval !== "5m") points = splitAdjust(points); // 日足以上は分割調整
+        if (points.length) {
+          return { points, prevClose: res.meta.chartPreviousClose || res.meta.previousClose || null };
+        }
+      } catch (e) {}
+    }
+    await jpSleep(600);
+  }
+  return null;
+}
+
+// フォールバック: Stooq の日足CSV（日中足はないので1日以外のみ）
+async function tryStooq(code, range) {
+  if (range === "1d") return null;
+  const target = `https://stooq.com/q/d/l/?s=${code}.jp&i=d`;
+  for (const p of JP_PROXIES) {
+    try {
+      const r = await fetchTimeout(p(target), 8000);
+      if (!r.ok) continue;
+      const txt = await r.text();
+      const lines = txt.trim().split("\n");
+      if (!/^Date,/.test(lines[0])) continue;
+      let pts = lines.slice(1).map(l => {
+        const c = l.split(",");
+        return { time: c[0], value: parseFloat(c[4]) };
+      }).filter(x => x.time && isFinite(x.value));
+      const days = { "1mo": 32, "3mo": 95, "1y": 370, "5y": 1830, "max": 0 }[range] || 0;
+      if (days) {
+        const cut = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+        pts = pts.filter(x => x.time >= cut);
+      }
+      if (pts.length) return { points: splitAdjust(pts), prevClose: null };
+    } catch (e) {}
+  }
+  return null;
+}
+
+async function fetchJp(code, range, interval) {
+  const key = `jpcache_${code}_${range}`;
+  const ttl = range === "1d" ? 5 * 60e3 : 60 * 60e3;
+  const readCache = () => { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; } };
+  const cached = readCache();
+  if (cached && Date.now() - cached.t < ttl) return { ...cached.d, stale: false };
+
+  return jpEnqueue(async () => {
+    const c2 = readCache(); // キュー待ちの間に他のカードが取得済みかも
+    if (c2 && Date.now() - c2.t < ttl) return { ...c2.d, stale: false };
+    const d = (await tryYahoo(code, range, interval)) || (await tryStooq(code, range));
+    await jpSleep(300);
+    if (d) {
+      try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), d })); } catch (e) {}
+      return { ...d, stale: false };
+    }
+    const c3 = readCache();
+    if (c3) return { ...c3.d, stale: true };
+    throw new Error("fetch failed");
+  });
+}
+
+const fmtJp = n => n.toLocaleString("ja-JP", { maximumFractionDigits: n < 100 ? 2 : 0 });
+
+function makeJpChart(name, symbol) {
+  const code = symbol.split(":")[1];
+  const wrap = document.createElement("div");
+  wrap.className = "chart jp";
+  wrap.innerHTML = `
+    <div class="jp-head">
+      <span class="jp-price">--</span>
+      <span class="jp-change"></span>
+      <span class="jp-mkt"></span>
+      <span class="jp-note">読込中…</span>
+    </div>
+    <div class="jp-ranges"></div>
+    <div class="jp-canvas"></div>`;
+  const priceEl = wrap.querySelector(".jp-price");
+  const changeEl = wrap.querySelector(".jp-change");
+  const noteEl = wrap.querySelector(".jp-note");
+  const rangesEl = wrap.querySelector(".jp-ranges");
+  const canvasEl = wrap.querySelector(".jp-canvas");
+  let chart = null, series = null;
+
+  async function show(idx) {
+    [...rangesEl.children].forEach((b, i) => b.classList.toggle("active", i === idx));
+    const R = JP_RANGES[idx];
+    noteEl.textContent = "読込中…";
+    try {
+      const { points, prevClose, stale } = await fetchJp(code, R.range, R.interval);
+      if (!chart) {
+        chart = LightweightCharts.createChart(canvasEl, {
+          autoSize: true,
+          layout: { background: { type: "solid", color: "transparent" }, textColor: "#8b949e", fontSize: 10 },
+          grid: { vertLines: { color: "#21262d" }, horzLines: { color: "#21262d" } },
+          rightPriceScale: { borderColor: "#30363d" },
+          timeScale: { borderColor: "#30363d" },
+          crosshair: { mode: 0 },
+          localization: { locale: "ja-JP" }
+        });
+        series = chart.addAreaSeries({ lineWidth: 2 });
+      }
+      const base = (R.range === "1d" && prevClose) ? prevClose : points[0].value;
+      const last = points[points.length - 1].value;
+      const up = last >= base;
+      const c = up ? "#3fb950" : "#f85149";
+      series.applyOptions({
+        lineColor: c,
+        topColor: up ? "rgba(63,185,80,0.25)" : "rgba(248,81,73,0.25)",
+        bottomColor: "rgba(0,0,0,0)"
+      });
+      chart.applyOptions({ timeScale: { timeVisible: R.interval.endsWith("m"), borderColor: "#30363d" } });
+      series.setData(points);
+      chart.timeScale().fitContent();
+      priceEl.textContent = fmtJp(last) + " 円";
+      const diff = last - base, pct = (diff / base) * 100;
+      changeEl.textContent = `${diff >= 0 ? "+" : ""}${fmtJp(diff)} (${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%) / ${R.label}`;
+      changeEl.className = "jp-change " + (up ? "up" : "down");
+      noteEl.textContent = stale ? "⚠ 取得失敗のためキャッシュ表示" : "";
+    } catch (e) {
+      noteEl.textContent = "データ取得に失敗しました（無料中継サーバーの混雑の可能性。時間をおいて再読み込みを）";
+    }
+  }
+
+  JP_RANGES.forEach((R, i) => {
+    const b = document.createElement("button");
+    b.textContent = R.label;
+    b.addEventListener("click", () => show(i));
+    rangesEl.appendChild(b);
+  });
+  show(2); // 初期表示: 3ヶ月
+  setTimeout(updateJpMkts, 0); // カードがDOMに入った直後にステータス表示
+  return wrap;
+}
+
+// ===== 米国株など: TradingView埋め込み =====
+function makeTvChart(name, symbol) {
+  const chart = document.createElement("div");
+  chart.className = "chart";
+  const container = document.createElement("div");
+  container.className = "tradingview-widget-container";
+  container.style.height = "100%";
+  const inner = document.createElement("div");
+  inner.className = "tradingview-widget-container__widget";
+  inner.style.height = "100%";
+  container.appendChild(inner);
+
+  const script = document.createElement("script");
+  script.type = "text/javascript";
+  script.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js";
+  script.async = true;
+  script.textContent = JSON.stringify({
+    symbols: [[name.replace(/[|;]/g, " "), symbol + "|3M"]],
+    chartOnly: false, width: "100%", height: "100%", locale: "ja",
+    colorTheme: "dark", autosize: true, showVolume: false, showMA: false,
+    hideDateRanges: false, hideMarketStatus: false, hideSymbolLogo: false,
+    scalePosition: "right", scaleMode: "Normal",
+    fontFamily: "-apple-system, BlinkMacSystemFont, Roboto, sans-serif",
+    fontSize: "10", noTimeScale: false, valuesTracking: "1",
+    changeMode: "price-and-percent", chartType: "area", lineWidth: 2,
+    dateRanges: ["1d|1", "1m|30", "3m|60", "12m|1D", "60m|1W", "all|1M"],
+    isTransparent: true
+  });
+  container.appendChild(script);
+  chart.appendChild(container);
+  return chart;
+}
+
+function makeChart(name, symbol) {
+  return /^TSE:/.test(symbol) ? makeJpChart(name, symbol) : makeTvChart(name, symbol);
+}
+
+function makeCard(item, opts) {
+  const { name, symbol, lesson } = item;
+  const memo = ANALYSIS.items[symbol];
+  const card = document.createElement("div");
+  card.className = "card" + (opts.pick ? " pick" : "");
+
+  const head = document.createElement("div");
+  head.className = "head";
+  const title = document.createElement("div");
+  title.className = "title";
+  const isJp = /^TSE:/.test(symbol);
+  title.innerHTML = (opts.pick ? "⭐ 今日の学び銘柄: " : "") + name +
+    ` <small>${symbol}${isJp ? "（東証・円建て）" : ""}</small>`;
+  head.appendChild(title);
+
+  if (opts.editable) {
+    const i = opts.index;
+    const mkBtn = (txt, tip, cls, fn) => {
+      const b = document.createElement("button");
+      b.className = "ctl " + (cls || "");
+      b.textContent = txt;
+      b.title = tip;
+      b.addEventListener("click", fn);
+      return b;
+    };
+    head.appendChild(mkBtn("◀", "前へ移動", "", () => moveItem(i, -1)));
+    head.appendChild(mkBtn("▶", "後ろへ移動", "", () => moveItem(i, 1)));
+    head.appendChild(mkBtn("✕", "この銘柄を削除", "del", () => removeItem(i)));
+
+    // ドラッグ＆ドロップ並べ替え
+    title.draggable = true;
+    title.addEventListener("dragstart", e => {
+      e.dataTransfer.setData("text/plain", String(i));
+      e.dataTransfer.effectAllowed = "move";
+    });
+    card.addEventListener("dragover", e => { e.preventDefault(); card.classList.add("dragover"); });
+    card.addEventListener("dragleave", () => card.classList.remove("dragover"));
+    card.addEventListener("drop", e => {
+      e.preventDefault();
+      card.classList.remove("dragover");
+      const from = parseInt(e.dataTransfer.getData("text/plain"), 10);
+      if (!isNaN(from) && from !== i) {
+        const [moved] = list.splice(from, 1);
+        list.splice(i, 0, moved);
+        saveList();
+        render();
+      }
+    });
+  }
+  card.appendChild(head);
+
+  if (opts.pick && lesson) {
+    const l = document.createElement("div");
+    l.className = "lesson";
+    l.textContent = lesson;
+    card.appendChild(l);
+  }
+
+  card.appendChild(makeChart(name, symbol));
+
+  if (memo && (memo.outlook || memo.note)) {
+    const d = document.createElement("details");
+    d.className = "memo";
+    d.innerHTML = `<summary>📝 展望と考察メモ（${ANALYSIS.asof}時点・毎朝自動更新）</summary>
+      <div class="memo-body">${memo.outlook || ""}${memo.outlook && memo.note ? "<br><br>" : ""}${memo.note || ""}</div>`;
+    card.appendChild(d);
+  }
+  return card;
+}
+
+function moveItem(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  saveList();
+  render();
+}
+function removeItem(i) {
+  if (!confirm(`「${list[i].name}」を削除しますか？`)) return;
+  list.splice(i, 1);
+  saveList();
+  render();
+}
+
+// ===== 描画 =====
+function render() {
+  grid.innerHTML = "";
+
+  const ov = document.createElement("div");
+  ov.className = "overview";
+  ov.innerHTML = `
+    <h2>🔭 マーケット全体の見通し <span class="badge">${ANALYSIS.asof}時点・毎朝自動更新</span></h2>
+    ${ANALYSIS.market}`;
+  grid.appendChild(ov);
+
+  grid.appendChild(makeCard(pick, { pick: true }));
+  list.forEach((item, i) => grid.appendChild(makeCard(item, { editable: true, index: i })));
+}
+
+// ===== 追加・リセットUI =====
+const addPanel = document.getElementById("addPanel");
+document.getElementById("addBtn").addEventListener("click", () => {
+  addPanel.classList.toggle("show");
+  if (addPanel.classList.contains("show")) document.getElementById("inName").focus();
+});
+document.getElementById("cancelAdd").addEventListener("click", () => addPanel.classList.remove("show"));
+document.getElementById("confirmAdd").addEventListener("click", () => {
+  const symbol = document.getElementById("inSymbol").value.trim().toUpperCase();
+  let name = document.getElementById("inName").value.trim();
+  if (!symbol) { alert("シンボルを入力してください（例: TSE:6758、NASDAQ:AAPL）"); return; }
+  if (!/^[A-Z0-9_]+:[A-Z0-9._!&-]+$/.test(symbol)) {
+    alert("シンボルは「取引所:ティッカー」の形式で入力してください（例: TSE:6758、NASDAQ:AAPL）");
+    return;
+  }
+  if (/^TSE:/.test(symbol) && !/^TSE:\d{4}\d?$/.test(symbol)) {
+    alert("東証銘柄は TSE:4桁の証券コード で入力してください（例: 任天堂→TSE:7974、ソニー→TSE:6758）");
+    return;
+  }
+  if (list.some(x => x.symbol === symbol)) { alert("この銘柄はすでに追加されています。"); return; }
+  if (!name) name = symbol.split(":")[1];
+  list.push({ name, symbol });
+  saveList();
+  document.getElementById("inName").value = "";
+  document.getElementById("inSymbol").value = "";
+  addPanel.classList.remove("show");
+  render();
+});
+document.getElementById("resetBtn").addEventListener("click", () => {
+  if (!confirm("銘柄リストを初期設定（オルカン/S&P500/NASDAQ100/日経平均/任天堂/SpaceX）に戻しますか？")) return;
+  localStorage.removeItem(LS_KEY);
+  list = loadList();
+  render();
+});
+
+render();
+</script>
+
+</body>
+</html>
