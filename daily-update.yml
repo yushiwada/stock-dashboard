@@ -1,0 +1,48 @@
+name: daily-update
+
+on:
+  schedule:
+    - cron: "45 23 * * 0-4"   # UTC 23:45 日〜木 = 日本時間 平日 8:45
+  workflow_dispatch:           # 手動実行も可能
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update analysis with Claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/update_analysis.mjs
+
+      - name: Commit and push
+        run: |
+          git config user.name "stock-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "chore: morning analysis update"
+          git push
+
+      - name: Notify phone (ntfy)
+        if: always()
+        env:
+          NTFY_TOPIC: kabu-yushiwada-x7k24m
+        run: |
+          if [ -f summary.txt ]; then
+            curl -s -H "Title: Morning stock summary" -H "Tags: chart_with_upwards_trend" \
+              --data-binary @summary.txt "https://ntfy.sh/${NTFY_TOPIC}"
+            printf '\n\nダッシュボード: https://yushiwada.github.io/stock-dashboard/' | \
+              curl -s -H "Title: Dashboard" --data-binary @- "https://ntfy.sh/${NTFY_TOPIC}" > /dev/null
+          else
+            curl -s -H "Title: Update failed" \
+              -d "株価ダッシュボードの自動更新でエラー。GitHub Actionsのログを確認してください。" \
+              "https://ntfy.sh/${NTFY_TOPIC}"
+          fi
