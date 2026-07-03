@@ -12,7 +12,7 @@ const cur = html.match(blockRe);
 if (!cur) throw new Error("ANALYSIS ブロックが見つかりません");
 
 const today = new Date().toLocaleDateString("ja-JP", {
-    timeZone: "Asia/Tokyo", year: "numeric", month: "numeric", day: "numeric"
+      timeZone: "Asia/Tokyo", year: "numeric", month: "numeric", day: "numeric"
 });
 
 const prompt = `あなたは個人用株価ダッシュボードの「展望と考察」欄を毎朝更新する編集者です。ウェブ検索で最新情報を調べ、最後に指定のJSONだけを出力してください。
@@ -47,28 +47,43 @@ ${cur[0].slice(0, 7000)}
 
                        制約: 事実は検索で確認できたもののみ書く。投資助言はしない（事実とアナリスト見通しの紹介に留める）。各テキストは日本語。`;
 
-const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-          "x-api-key": API_KEY,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json"
-    },
-    body: JSON.stringify({
-          model: "claude-sonnet-5",
-          max_tokens: 4096,
-          tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 8 }],
-          messages: [{ role: "user", content: prompt }]
-    })
-});
-if (!res.ok) throw new Error("Claude API エラー " + res.status + ": " + (await res.text()).slice(0, 500));
-const data = await res.json();
+// ウェブ検索は長いターンになると "pause_turn" で中断されるため、続きを要求するループで回す
+const messages = [{ role: "user", content: prompt }];
+let data;
+for (let turn = 0; turn < 8; turn++) {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+              method: "POST",
+              headers: {
+                        "x-api-key": API_KEY,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json"
+              },
+              body: JSON.stringify({
+                        model: "claude-sonnet-5",
+                        max_tokens: 8000,
+                        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 6 }],
+                        messages
+              })
+      });
+      if (!res.ok) throw new Error("Claude API エラー " + res.status + ": " + (await res.text()).slice(0, 500));
+      data = await res.json();
+      console.log("turn", turn, "stop_reason:", data.stop_reason);
+      if (data.stop_reason === "pause_turn" || data.stop_reason === "max_tokens") {
+              messages.push({ role: "assistant", content: data.content });
+              if (data.stop_reason === "max_tokens") {
+                        messages.push({ role: "user", content: "続けて、指定のJSONのみを出力してください。" });
+              }
+              continue;
+      }
+      break;
+}
 const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
 const jm = text.match(/\{[\s\S]*\}/);
-if (!jm) throw new Error("JSONが見つかりません: " + text.slice(0, 300));
+if (!jm) throw new Error("JSONが見つかりません (stop_reason=" + data.stop_reason +
+                           ", blocks=" + (data.content || []).map(b => b.type).join(",") + "): " + text.slice(0, 300));
 const out = JSON.parse(jm[0]);
 for (const k of ["asof", "market", "items", "summary"]) {
-    if (!(k in out)) throw new Error("キー不足: " + k);
+      if (!(k in out)) throw new Error("キー不足: " + k);
 }
 
 const { summary, ...analysis } = out;
