@@ -1122,28 +1122,33 @@ inNameEl.addEventListener("focus", () => {
 inNameEl.addEventListener("blur", () => setTimeout(() => { suggListEl.style.display = "none"; }, 150));
 
 
-// ===== 日本語マーケットニュース（Google News 日本語ビジネスRSS → rss2jsonでCORS対応JSON化） =====
+// ===== 日本語マーケットニュース（株式に絞ったGoogle News検索RSS → rss2jsonでCORS対応JSON化。日経新聞は会員限定のため出典で除外） =====
 async function loadJpNews() {
   const el = document.getElementById("jpNews");
   if (!el) return;
-  const feed = "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=ja&gl=JP&ceid=JP:ja";
+  const feed = "https://news.google.com/rss/search?q=" + encodeURIComponent("株価 OR 日経平均 OR 東証 OR 決算 OR 米国株 OR TOPIX when:2d") + "&hl=ja&gl=JP&ceid=JP:ja";
   const api = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(feed);
   const ctl = new AbortController();
   const tid = setTimeout(() => ctl.abort(), 12000);
   const esc = s => (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
   const rel = ms => { const s = (Date.now() - ms) / 1000; if (s < 3600) return Math.max(1, Math.floor(s / 60)) + "分前"; if (s < 86400) return Math.floor(s / 3600) + "時間前"; return Math.floor(s / 86400) + "日前"; };
+  const EXCLUDE = /日本経済新聞|日経|NIKKEI/i; // 出典が日経系（会員登録が必要）の記事は除外。見出しの「日経平均」は対象外
   try {
     const r = await fetch(api, { signal: ctl.signal });
     clearTimeout(tid);
     const j = await r.json();
     if (j.status !== "ok" || !Array.isArray(j.items) || !j.items.length) throw new Error("no items");
-    el.innerHTML = j.items.slice(0, 20).map(it => {
+    const rows = [];
+    for (const it of j.items) {
       let title = it.title || "", src = "";
       const mm = title.match(/^(.*) - ([^-]+)$/);
       if (mm) { title = mm[1]; src = mm[2]; }
+      if (EXCLUDE.test(src)) continue;
       const when = it.pubDate ? rel(new Date(it.pubDate.replace(" ", "T") + "Z").getTime()) : "";
-      return '<a class="item" href="' + (it.link || "#") + '" target="_blank" rel="noopener"><div class="t">' + esc(title) + '</div><div class="m">' + esc(src) + (src && when ? " · " : "") + when + '</div></a>';
-    }).join("");
+      rows.push('<a class="item" href="' + (it.link || "#") + '" target="_blank" rel="noopener"><div class="t">' + esc(title) + '</div><div class="m">' + esc(src) + (src && when ? " · " : "") + when + '</div></a>');
+      if (rows.length >= 20) break;
+    }
+    el.innerHTML = rows.length ? rows.join("") : '<div class="err">表示できるニュースがありませんでした。</div>';
   } catch (e) {
     clearTimeout(tid);
     el.innerHTML = '<div class="err">ニュースの取得に失敗しました（時間をおいて再読み込みを）。</div>';
