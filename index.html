@@ -76,6 +76,15 @@
   }
   #addPanel input:focus { outline: none; border-color: var(--accent); }
   #addPanel .hint { width: 100%; font-size: 12px; color: var(--sub); line-height: 1.6; }
+  .sugg { position: relative; display: inline-block; }
+  .sugg-list {
+    position: absolute; top: 100%; left: 0; margin-top: 4px;
+    min-width: 280px; max-height: 260px; overflow-y: auto;
+    background: var(--card); border: 1px solid var(--accent); border-radius: 8px; z-index: 50;
+  }
+  .sugg-item { padding: 8px 12px; font-size: 13px; cursor: pointer; }
+  .sugg-item:hover { background: var(--bg); }
+  .sugg-item small { color: var(--sub); margin-left: 6px; }
 
   .tape { border-bottom: 1px solid var(--border); margin-bottom: 16px; }
   .grid {
@@ -237,8 +246,11 @@
 
 <div id="addPanel">
   <div class="panel-inner">
-    <input id="inName" placeholder="表示名（例: ソニー）" size="20">
-    <input id="inSymbol" placeholder="シンボル（例: TSE:6758）" size="24" list="symList">
+    <span class="sugg">
+      <input id="inName" placeholder="銘柄名で検索（例: ソニー）" size="22" autocomplete="off">
+      <div id="suggList" class="sugg-list" style="display:none"></div>
+    </span>
+    <input id="inSymbol" placeholder="シンボル（自動入力）" size="24" list="symList">
     <datalist id="symList">
       <option value="TSE:6758">ソニーG</option>
       <option value="TSE:9984">ソフトバンクG</option>
@@ -270,29 +282,8 @@
   </div>
 </div>
 
-<!-- ティッカーテープ -->
-<div class="tape">
-  <div class="tradingview-widget-container">
-    <div class="tradingview-widget-container__widget"></div>
-    <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-    {
-      "symbols": [
-        {"proName": "FOREXCOM:SPXUSD", "title": "S&P500"},
-        {"proName": "FOREXCOM:NSXUSD", "title": "NASDAQ100"},
-        {"proName": "FOREXCOM:JP225", "title": "日経225"},
-        {"proName": "NASDAQ:SPCX", "title": "SpaceX"},
-        {"proName": "OTC:NTDOY", "title": "任天堂ADR"},
-        {"proName": "FX_IDC:USDJPY", "title": "ドル円"}
-      ],
-      "showSymbolLogo": true,
-      "colorTheme": "dark",
-      "isTransparent": true,
-      "displayMode": "adaptive",
-      "locale": "ja"
-    }
-    </script>
-  </div>
-</div>
+<!-- ティッカーテープ（現在の銘柄リストに自動連動） -->
+<div class="tape" id="tape"></div>
 
 <div class="grid" id="grid"></div>
 
@@ -324,65 +315,53 @@
 
 <script>
 /* ===== ANALYSIS_START =====
-   このブロックは毎朝の自動処理（GitHub Actions + Claude API）が書き換える。手動編集しない。 */
+   このブロックは毎朝の定期タスク（Claude）が最新の相場情報で書き換える。
+   形式: ANALYSIS.asof = "YYYY/M/D"、market = 全体見通しHTML、
+   items = シンボル→{outlook, note}。HTMLタグは <b> と <br> と <a> のみ使用。 */
 const ANALYSIS = {
-  "asof": "2026/7/6",
-  "market": "<b>米国株:</b> 7月2日のNASDAQ100は-1.61%（479.92ポイント安）で29,329ポイント。6月雇用統計で非農業部門雇用が予想下回り、成長株からディフェンシブ銘柄への資金移動が加速。半導体・AI銘柄の利益確定売りが継続。FRBは政策金利3.50～3.75%を据え置き、市場では年後半の利上げ観測が後退。野村は2026年末のS&P500見通しを7,200ポイントに引き上げ。<br><b>日本株:</b> 7月2日の日経平均は-2.47%（1,741円安）で68,733円。半導体・AI関連が売られる一方、銀行など金融セクターが買われセクターローテーション加速。7月3日は米利上げ観測の後退が支えとなり反発し69,744円。野村は2026年末63,000円、上振れで70,500円を想定。NT倍率16倍超が過去最高水準で平均回帰への注意が必要。<br><b>見方のコツ:</b> 米国では6月雇用統計の弱さとインフレ高止まりの綱引きで政策転換時期が流動的。日本ではハイパースケーラー投資伸び率鈍化への懸念から2026年後半の半導体株調整リスクに注意。両市場ともセクター間の選別が激しくなる局面。",
-  "items": {
+  asof: "2026/7/2",
+  market: `<b>米国株:</b> 2026年通年のEPS成長は約23%見込みと非常に強く、ウォール街は年末までさらに+5%程度を予想。AI設備投資（大手クラウドで約6,700億ドル）が利益成長の約4割を占める。最大のリスクはインフレ再加速による金利高止まりとエネルギー価格。<br>
+<b>日本株:</b> 野村は日経平均2026年末68,000円（上振れで7万円台）に上方修正。AI・半導体企業の経常利益は2026年度に倍増見込み。ただし2026年後半は米ハイパースケーラー投資の伸び率鈍化に注意。<br>
+<b>見方のコツ:</b> 大きな変動が起きた日は、①金利（米10年債利回り）②大手テックの決算・AI関連ニュース ③為替 ④地政学、の順に原因を探すとだいたい説明がつく。下のニュース欄も自動更新される。`,
+  items: {
     "TSE:2559": {
-      "outlook": "<b>展望:</b> 7月3日の日本株反発でオルカン連動。ドル円レートと米国株との相対的なパフォーマンスが主要決定要因。米国株EPS成長が2026年に約23%見込まれる中で、円建て指数も長期的には底堅い見通し継続。VTとの為替ベース比較で値動きの質が判定できる。",
-      "note": "<b>考察のポイント:</b> 7月4日（金）の米国独立記念日で市場休場後、月曜の日米株価の同期動向から本当の市場転換か調整かを判断。4-6月期決算発表が本格化する7月末以降、テック企業の実績が示す成長率が焦点。ドル円160円水準前後のレンジ推移に留意。"
+      outlook: "<b>展望:</b> オルカンと同じMSCI ACWI指数に連動する東証ETF（円建て）なので、値動きはオルカン基準価額とほぼ同じ。世界株の6割超は米国株で、実質は米国のAI相場と金利次第。2026年は米企業のEPS成長が20%超と強く、世界株も堅調が続くとの見方が主流。円建てなのでドル円の影響も込みで見られる。",
+      note: "<b>考察のポイント:</b> オルカンが大きく動く日は「米国株が動いた」か「為替が動いた」のどちらか。米国ETFのVT（ドル建て）と見比べると、どちらが原因か切り分けられる。"
     },
     "FOREXCOM:SPXUSD": {
-      "outlook": "<b>展望:</b> 7月2日時点でS&P500は7,455ポイント付近で推移。野村が2026年末見通しを6,600から7,200に上方修正。7月7日のSpaceX NASDAQ100採用による需給変化と、7月8日の6月中旬FOMC議事要旨に市場は注視。インフレ・金利・AI決算の綱引きが続き高値圏では振れやすい展開。",
-      "note": "<b>リスク要因:</b> 2026年EPS成長23%という高水準が織り込まれており、利益確定売りが出やすい局面。7月3日米雇用統計で予想下回ったことで利上げ観測後退も、インフレ高止まり警戒が相殺。大型テック決算ミスや関税政策ヘッドライン変化で上値が抑えられやすい。"
+      outlook: "<b>展望:</b> ウォール街のコンセンサスは年末までさらに+5%程度の上昇。アナリストの12ヶ月ボトムアップ目標は8,918（6/25時点）。2026年通年のEPS成長予想は約23%と2021年以来の高水準で、AI投資（大手クラウド4社の設備投資 約6,700億ドル）が利益成長の約4割を牽引。",
+      note: "<b>リスク要因:</b> インフレ再加速と雇用の強さでFRBの年後半利下げは期待薄。エネルギー価格上昇が金利を押し上げれば調整のきっかけに。大きく下げた日は「金利上昇」「AI関連決算ミス」「地政学（中東等）」のどれかをまず疑う。"
     },
     "FOREXCOM:NSXUSD": {
-      "outlook": "<b>展望:</b> 7月2日は-1.61%で29,329ポイント。大型テック（Magnitude）と半導体セクター（KLA、AMD、MRVL）の利益確定売りが顕著。7月7日のSpaceX NASDAQ100採用による浮動株需給変化とAI関連の動向が直近焦点。2026年後半のハイパースケーラー投資伸び率鈍化への懸念で成長株評価が不安定化。",
-      "note": "<b>考察のポイント:</b> 7月2日は雇用統計弱化で利下げ期待が浮上したものの、実際にはテック株から金融株へ資金流出。インフレ高止まり・金利高止まり警戒が優先。NASDAQ採用銘柄の入れ替えは短期ノイズだが、8月上旬のSpaceX初決算とインサイダーロックアップ段階解除（最大44%）が8月～9月の値動きを規定。"
+      outlook: "<b>展望:</b> AI設備投資ブームの中心で、S&P500より値動きが増幅されやすい。2026年後半はハイパースケーラーの投資額の「伸び率」が鈍化する見通しで、成長株の評価が金利と期待のバランスで揺れやすい局面。",
+      note: "<b>考察のポイント:</b> NASDAQ100の急変動はほぼ「大手テック決算」「金利（10年債利回り）」「AI関連ニュース」の3つで説明できる。SOXLの学びメモとも連動して見ると理解が深まる。"
     },
     "FOREXCOM:JP225": {
-      "outlook": "<b>展望:</b> 野村は日経平均2026年末63,000円（上振れ70,500円）に上方修正。7月2日の半導体・AI関連売却でセクターローテーション鮮明化。NT倍率16倍超が過去最高水準にあり、平均回帰による日経平均下値圧力が増す一方、TOPIX（バリュー指数）の追い上げ期待。4-6月期決算発表後の市場再構築に向けて。",
-      "note": "<b>考察のポイント:</b> 7月2日は日経平均-2.47%でもTOPIX+1.24%という典型的なセクターローテーション。金融・保険・資本財セクターが買われた一方、KDDIやソフトバンクグループが下落。6週移動平均線(68,215円)のサポートが機能し下値堅く、米SOX指数との連動性が一時的に低下。NT倍率の緩やかな低下見込み。"
+      outlook: "<b>展望:</b> 野村證券は2026年末目標を68,000円へ上方修正（AI・半導体企業の業績急拡大を反映、上振れなら7万円台も）。三井住友DSは61,500円予想。半導体・データセンター関連が牽引役。",
+      note: "<b>考察のポイント:</b> 日経平均は半導体株の指数寄与が大きく、米SOX指数と前日の米株に連動しやすい。急変動時は「前日の米ハイテク」「ドル円」「半導体大手の材料」を順にチェック。円高は輸出株を通じて下押し要因。"
     },
     "TSE:7974": {
-      "outlook": "<b>展望:</b> 6月26日に6,589円まで売り込まれるも、6月29日に+5.25%反発して6月末から7月初にかけ7,137円付近に回復。2026年3月期売上2兆3,130億円（+98.6%）と倍増、Switch 2販売1,986万台牽引。2027年3月期見通しは売上2兆500円（-11.3%）と慎重で市場期待とのギャップ。5月25日から値上げ（+1万円）、7月1日からSwitch Online料金も引き上げ。",
-      "note": "<b>直近の大変動の考察:</b> 6月9日Nintendo Directで新作タイトルが多数発表も「主力級タイトルが見当たらない」との評価で-7.19%急落。期待先行ポジションが材料出尽くしで巻き戻す。5月決算で営業利益率15.6%と前期24.3%から大幅低下、メモリ高騰による約1,000億円コスト増と値上げによる需要萎縮懸念が複合的に作用。投資単位の引下げ発表(6/29)は個人投資家参加環境整備の好材料。"
+      outlook: "<b>展望:</b> Switch 2は初年度1,986万台と記録的な売れ行きで売上は約2倍の2.3兆円。ただし会社側は2027年3月期を減収減益（売上-11%、純利益-27%）と保守的に見ており、値上げ（日本では59,980円に）後の普及ペースと、ホリデー商戦のソフトラインナップが焦点。",
+      note: "<b>直近の大変動の考察:</b> 株価は2025年8月の高値14,795円から2026年5月に7,000円割れまで約半値に下落。①爆売れでも利益率が24.3%→15.6%に低下（逆ザヤ気味の本体販売）、②減収減益ガイダンス、③メモリ高騰・関税で約1,000億円のコスト増、④値上げによる需要鈍化懸念が重なったのが理由。「売上倍増なのに株価半値」は業績と期待値の差を学ぶ好例。"
     },
     "NASDAQ:SPCX": {
-      "outlook": "<b>展望:</b> 6月12日公募価格135ドルでIPO、初値150ドル（+11.1%）。直後に225.64ドル（6月16日）まで急騰も6月23日に147.11ドル（-34.8%）まで急落。7月2日時点で162ドル付近で推移。時価総額2.16兆ドル（年間売上の約115倍）で割高感指摘。7月7日のNASDAQ100採用が予定。8月上旬の初決算が最初の試金石。",
-      "note": "<b>直近の大変動の考察:</b> 上場初期の極端な浮動株薄さ（3~4%）が値動き荒さの要因。ウェドブッシュが6月末にカバレッジ開始で目標株価190ドル設定も、170ドル台の前日終値との比較で上昇余地が限定的に映り売り圧力続く。8月上旬から中旬にかけインサイダー保有株20%ロックアップ解除予定で、9月上旬までに最大44%が売却可能に。赤字企業ながら高期待値で形成された株価、バリュエーション・流動性・マクロ環境の悪化で不安定。"
+      outlook: "<b>展望:</b> 6/12にIPO（公開価格$135、調達額750億ドルは史上最大）。時価総額は約2.2兆ドルとテスラ超え。Wedbushは「アウトパフォーム」目標$190でカバー開始（Starlink・Starship・AIデータセンターが評価軸）。ただし直近通期は約49億ドルの赤字で、株価は完全に将来期待で形成されている。<b>8/6予定の上場後初決算</b>が最初の大きな試金石。",
+      note: "<b>直近の大変動の考察:</b> 上場直後に$225.64（6/16）まで急騰後、$147.11（6/23）まで約-28%の急落。①浮動株が全体の3〜4%しかなく需給が極端に薄い、②初期の熱狂の反動と利益確定、③今後のロックアップ解除（大株主の売却解禁）への警戒が理由。IPO直後の銘柄は値動きが荒いことを学ぶ生きた教材。"
     }
   },
-  "picks": [
-    {
-      "name": "Broadcom（ブロードコム）",
-      "symbol": "NASDAQ:AVGO",
-      "reason": "7月2日のNASDAQ100は半導体株が全般売却対象も、JPMorganが半導体セクターのトップピック評価を維持。AI推論需要の急増で受注残は1,500億ドル超と推定。データセンター向けチップセットの需要底堅さが2026年後半の競争力を支える見込み。",
-      "risk": "バリュエーション高水準。2026年後半のハイパースケーラー投資伸び率鈍化に敏感で、AI関連決算ミス時には大きく下げやすい。関税政策や競合激化も懸念材料。",
-      "deadline": "2026-08-15"
-    },
-    {
-      "name": "Micron Technology（マイクロン）",
-      "symbol": "NASDAQ:MU",
-      "reason": "6月26日に3191円高（日経平均）をつけた相場ではマイクロン好決算がハイテク株買い気配を支えた。2026年度DRAM・NAND出荷2割増見込み。AI向けメモリ需要の急増でメモリ市況上昇局面では恩恵銘柄。6月決算で売上高4.5倍、純利益15倍と好業績示現。",
-      "risk": "メモリ市況は循環が激しく反落時の下げも大きい。マイクロン自体のガイダンス修正や設備投資計画変更リスク。ウェーハ在庫調整の長期化も懸念。",
-      "deadline": "2026-08-01"
-    },
-    {
-      "name": "キオクシア（東芝メモリ）",
-      "symbol": "TSE:3402",
-      "reason": "7月3日の日経平均反発をけん引した銘柄。キオクシアが安値から急速に持ち直して上げ幅を拡大し相場を押し上げ。メモリ市況改善とAI向けNAND需要拡大が業績を支える。年末のメモリ価格上昇期待と日本ハイテク株の相対的な割安感が投資家の好感を呼ぶ。",
-      "risk": "メモリ市況の反落リスク。ウェスタン・デジタル、SK Hynixなど競合との供給バランス変化。円高進行による為替悪化。政策金利上昇による機関投資家の選別強化。",
-      "deadline": "2026-08-20"
-    },
-    {
-      "name": "コマーシャル・バンク（米国大手銀行）",
-      "symbol": "NYSE:BAC",
-      "reason": "7月2日の日経平均でバリュー優位に転換し、金融セクターが買われた局面が米銀にも波及予想。利上げ観測後退で長期金利が下押し圧力を受けるも、企業設備投資や消費好調の下支えで貸出需要堅調。2026年後半の利下げ局面で銀行セクターの割安バリュエーション評価が相対的に高まる可能性。",
-      "risk": "利下げペース遅延によるネット・インタレスト・マージン（NIM）圧力。米国経済減速懸念時には信用リスク意識が急速に高まる。不動産セクターの不調継続。",
-      "deadline": "2026-08-03"
-    }
+  picks: [
+    { name: "ブロードコム", symbol: "NASDAQ:AVGO",
+      reason: "JPMorganが半導体セクターのトップピック。AI推論需要の急増でAI受注残は推定1,500億ドル超。",
+      risk: "高バリュエーション。AI設備投資の伸び鈍化に敏感。" },
+    { name: "マイクロン", symbol: "NASDAQ:MU",
+      reason: "2026年にDRAM/NAND出荷2割増の見込み。メモリ価格高騰の恩恵側。",
+      risk: "メモリ市況は循環が激しく、反落時の下げも大きい。" },
+    { name: "マイクロソフト", symbol: "NASDAQ:MSFT",
+      reason: "Morgan Stanleyが大型ソフト株のトップピック。需要持続と利益率改善が株価に未織り込みとの評価。",
+      risk: "AI投資の回収遅れ、金利高止まり。" },
+    { name: "伊藤忠商事", symbol: "TSE:8001",
+      reason: "業績好調で株主還元に積極的。夏の大型株として複数媒体が注目。",
+      risk: "資源価格・為替の変動、米関税の影響。" }
   ]
 };
 /* ===== ANALYSIS_END ===== */
@@ -890,6 +869,8 @@ function render() {
   pfCard.innerHTML = `<h2>💰 ピック積立シミュレーション（仮想）</h2><div id="pfBody">読込中…</div>`;
   grid.appendChild(pfCard);
   fillPortfolio();
+
+  renderTape(); // 現在の銘柄リストにティッカーテープを連動
 }
 
 async function fillPortfolio() {
@@ -925,6 +906,215 @@ async function fillPortfolio() {
   }
 }
 
+// ===== ティッカーテープ（現在の銘柄リストに自動連動） =====
+// TradingViewのテープは東証の遅延銘柄を配信できないことが多いため、
+// 主要な東証銘柄は米国上場のADR/相当銘柄に代用マッピングする。
+const TAPE_SUBST = {
+  "TSE:7974": "OTC:NTDOY",   // 任天堂 → 米ADR
+  "TSE:6758": "NYSE:SONY",   // ソニーG
+  "TSE:7203": "NYSE:TM",     // トヨタ
+  "TSE:8306": "NYSE:MUFG",   // 三菱UFJ
+  "TSE:8316": "NYSE:SMFG",   // 三井住友FG
+  "TSE:8411": "OTC:MFG",     // みずほ
+  "TSE:9984": "OTC:SFTBY",   // ソフトバンクG
+  "TSE:9983": "OTC:FRCOY",   // ファーストリテイリング
+  "TSE:6861": "OTC:KYCCF",   // キーエンス
+  "TSE:6501": "OTC:HTHIY",   // 日立
+  "TSE:7267": "NYSE:HMC",    // ホンダ
+  "TSE:4502": "NYSE:TAK",    // 武田薬品
+  "TSE:9432": "OTC:NTTYY",   // NTT
+  "TSE:2559": "NASDAQ:ACWI", // オルカン相当（MSCI ACWI ETF）
+  "TSE:1655": "FOREXCOM:SPXUSD", // S&P500円建て → S&P500
+  "TSE:1306": "FOREXCOM:JP225"   // TOPIX ETF → 日経225で代用
+};
+function toTapeSymbol(item) {
+  const s = item.symbol;
+  const proName = TAPE_SUBST[s] || s; // 非TSEはそのままTradingView形式
+  return { proName, title: item.name };
+}
+let lastTapeKey = "";
+function renderTape() {
+  const tape = document.getElementById("tape");
+  if (!tape) return;
+  const symbols = list.map(toTapeSymbol);
+  if (!symbols.length) { tape.innerHTML = ""; lastTapeKey = ""; return; }
+  const key = symbols.map(x => x.proName + "|" + x.title).join(",");
+  if (key === lastTapeKey) return; // 銘柄・順序が同じなら作り直さない
+  lastTapeKey = key;
+  tape.innerHTML =
+    '<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div>';
+  const script = document.createElement("script");
+  script.type = "text/javascript";
+  script.src = "https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js";
+  script.async = true;
+  script.textContent = JSON.stringify({
+    symbols,
+    showSymbolLogo: true,
+    colorTheme: "dark",
+    isTransparent: true,
+    displayMode: "adaptive",
+    locale: "ja"
+  });
+  tape.querySelector(".tradingview-widget-container").appendChild(script);
+}
+
+// ===== 銘柄名の予測変換（名前で検索 → 候補から選ぶ） =====
+// まずローカル辞書で即時候補。長い裾はYahoo Financeの検索APIで補完。
+const NAME_INDEX = [
+  // 指数・CFD
+  { name: "S&P500", symbol: "FOREXCOM:SPXUSD", aliases: ["sp500", "spx", "エスピー"] },
+  { name: "NASDAQ100", symbol: "FOREXCOM:NSXUSD", aliases: ["nasdaq", "ナスダック", "nsx"] },
+  { name: "日経平均（日経225）", symbol: "FOREXCOM:JP225", aliases: ["nikkei", "にっけい", "jp225", "225"] },
+  { name: "NYダウ", symbol: "FOREXCOM:US30", aliases: ["dow", "ダウ", "us30"] },
+  // 日本株
+  { name: "任天堂", symbol: "TSE:7974", aliases: ["nintendo", "にんてんどう", "7974"] },
+  { name: "ソニーグループ", symbol: "TSE:6758", aliases: ["sony", "そにー", "6758"] },
+  { name: "トヨタ自動車", symbol: "TSE:7203", aliases: ["toyota", "とよた", "7203"] },
+  { name: "ソフトバンクグループ", symbol: "TSE:9984", aliases: ["softbank", "そふとばんく", "9984"] },
+  { name: "三菱UFJフィナンシャル", symbol: "TSE:8306", aliases: ["mufg", "みつびしufj", "8306"] },
+  { name: "三井住友フィナンシャル", symbol: "TSE:8316", aliases: ["smfg", "みついすみとも", "8316"] },
+  { name: "みずほフィナンシャル", symbol: "TSE:8411", aliases: ["mizuho", "みずほ", "8411"] },
+  { name: "キーエンス", symbol: "TSE:6861", aliases: ["keyence", "きーえんす", "6861"] },
+  { name: "東京エレクトロン", symbol: "TSE:8035", aliases: ["tokyo electron", "とうきょうえれくとろん", "8035"] },
+  { name: "アドバンテスト", symbol: "TSE:6857", aliases: ["advantest", "あどばんてすと", "6857"] },
+  { name: "レーザーテック", symbol: "TSE:6920", aliases: ["lasertec", "れーざーてっく", "6920"] },
+  { name: "ディスコ", symbol: "TSE:6146", aliases: ["disco", "でぃすこ", "6146"] },
+  { name: "信越化学工業", symbol: "TSE:4063", aliases: ["shinetsu", "しんえつ", "4063"] },
+  { name: "村田製作所", symbol: "TSE:6981", aliases: ["murata", "むらた", "6981"] },
+  { name: "日立製作所", symbol: "TSE:6501", aliases: ["hitachi", "ひたち", "6501"] },
+  { name: "本田技研工業（ホンダ）", symbol: "TSE:7267", aliases: ["honda", "ほんだ", "7267"] },
+  { name: "武田薬品工業", symbol: "TSE:4502", aliases: ["takeda", "たけだ", "4502"] },
+  { name: "第一三共", symbol: "TSE:4568", aliases: ["daiichi sankyo", "だいいちさんきょう", "4568"] },
+  { name: "ファーストリテイリング（ユニクロ）", symbol: "TSE:9983", aliases: ["fast retailing", "uniqlo", "ゆにくろ", "9983"] },
+  { name: "リクルートホールディングス", symbol: "TSE:6098", aliases: ["recruit", "りくるーと", "6098"] },
+  { name: "KDDI", symbol: "TSE:9433", aliases: ["kddi", "9433", "au"] },
+  { name: "日本電信電話（NTT）", symbol: "TSE:9432", aliases: ["ntt", "9432"] },
+  { name: "伊藤忠商事", symbol: "TSE:8001", aliases: ["itochu", "いとうちゅう", "8001"] },
+  { name: "三菱商事", symbol: "TSE:8058", aliases: ["mitsubishi corp", "みつびししょうじ", "8058"] },
+  { name: "三井物産", symbol: "TSE:8031", aliases: ["mitsui", "みついぶっさん", "8031"] },
+  { name: "日本製鉄", symbol: "TSE:5401", aliases: ["nippon steel", "にっぽんせいてつ", "5401"] },
+  { name: "三菱重工業", symbol: "TSE:7011", aliases: ["mhi", "みつびしじゅうこう", "7011"] },
+  // 米国株
+  { name: "アップル（Apple）", symbol: "NASDAQ:AAPL", aliases: ["apple", "あっぷる", "aapl"] },
+  { name: "エヌビディア（NVIDIA）", symbol: "NASDAQ:NVDA", aliases: ["nvidia", "えぬびでぃあ", "nvda"] },
+  { name: "マイクロソフト（Microsoft）", symbol: "NASDAQ:MSFT", aliases: ["microsoft", "まいくろそふと", "msft"] },
+  { name: "テスラ（Tesla）", symbol: "NASDAQ:TSLA", aliases: ["tesla", "てすら", "tsla"] },
+  { name: "アルファベット（Google）", symbol: "NASDAQ:GOOGL", aliases: ["google", "alphabet", "ぐーぐる", "googl"] },
+  { name: "アマゾン（Amazon）", symbol: "NASDAQ:AMZN", aliases: ["amazon", "あまぞん", "amzn"] },
+  { name: "メタ（Meta / Facebook）", symbol: "NASDAQ:META", aliases: ["meta", "facebook", "めた", "めた"] },
+  { name: "ブロードコム（Broadcom）", symbol: "NASDAQ:AVGO", aliases: ["broadcom", "ぶろーどこむ", "avgo"] },
+  { name: "マイクロン（Micron）", symbol: "NASDAQ:MU", aliases: ["micron", "まいくろん", "mu"] },
+  { name: "AMD", symbol: "NASDAQ:AMD", aliases: ["amd", "えーえむでぃー"] },
+  { name: "インテル（Intel）", symbol: "NASDAQ:INTC", aliases: ["intel", "いんてる", "intc"] },
+  { name: "ネットフリックス（Netflix）", symbol: "NASDAQ:NFLX", aliases: ["netflix", "ねっとふりっくす", "nflx"] },
+  { name: "パランティア（Palantir）", symbol: "NASDAQ:PLTR", aliases: ["palantir", "ぱらんてぃあ", "pltr"] },
+  { name: "コカ・コーラ", symbol: "NYSE:KO", aliases: ["coca cola", "こかこーら", "ko"] },
+  { name: "ディズニー（Disney）", symbol: "NYSE:DIS", aliases: ["disney", "でぃずにー", "dis"] },
+  { name: "SpaceX", symbol: "NASDAQ:SPCX", aliases: ["spacex", "すぺーすえっくす", "spcx"] },
+  // ETF・その他
+  { name: "オルカン（全世界株ETF 2559）", symbol: "TSE:2559", aliases: ["オルカン", "おるかん", "acwi", "全世界", "2559"] },
+  { name: "S&P500 円建てETF（1655）", symbol: "TSE:1655", aliases: ["1655", "sp500円建て"] },
+  { name: "TOPIX ETF（1306）", symbol: "TSE:1306", aliases: ["topix", "とぴっくす", "1306"] },
+  { name: "米国債20年ヘッジあり（2621）", symbol: "TSE:2621", aliases: ["2621", "べいこくさい"] },
+  { name: "金ETF（GLD）", symbol: "AMEX:GLD", aliases: ["gold", "きん", "ごーるど", "gld"] },
+  { name: "ビットコイン", symbol: "BITSTAMP:BTCUSD", aliases: ["bitcoin", "びっとこいん", "btc"] },
+  { name: "ドル円（USD/JPY）", symbol: "FX_IDC:USDJPY", aliases: ["usdjpy", "どるえん", "為替"] },
+  { name: "SOXL（半導体ブル3倍）", symbol: "AMEX:SOXL", aliases: ["soxl", "半導体"] },
+  { name: "SMH（半導体ETF）", symbol: "NASDAQ:SMH", aliases: ["smh", "半導体"] },
+  { name: "VT（全世界株）", symbol: "AMEX:VT", aliases: ["vt", "全世界"] },
+  { name: "VYM（米国高配当）", symbol: "AMEX:VYM", aliases: ["vym", "高配当"] },
+  { name: "SCHD（米国連続増配）", symbol: "AMEX:SCHD", aliases: ["schd", "増配"] },
+  { name: "TLT（米国長期債）", symbol: "NASDAQ:TLT", aliases: ["tlt", "債券"] },
+  { name: "IBIT（ビットコインETF）", symbol: "NASDAQ:IBIT", aliases: ["ibit", "びっとこいん"] }
+];
+function normalizeQ(s) { return (s || "").trim().toLowerCase(); }
+function localMatches(q) {
+  q = normalizeQ(q);
+  if (!q) return [];
+  return NAME_INDEX.filter(e =>
+    e.name.toLowerCase().includes(q) ||
+    e.symbol.toLowerCase().includes(q) ||
+    (e.aliases || []).some(a => a.toLowerCase().includes(q))
+  ).slice(0, 10);
+}
+// Yahoo Financeの銘柄検索（任意の銘柄名に対応）。CORS中継経由。
+function yahooToAppSymbol(qt) {
+  const s = qt.symbol || "";
+  const ex = (qt.exchange || "").toUpperCase();
+  const type = qt.quoteType || "";
+  if (/\.T$/.test(s)) {
+    const code = s.replace(/\.T$/, "");
+    return /^\d{4}\d?$/.test(code) ? "TSE:" + code : null;
+  }
+  if (type === "EQUITY" || type === "ETF") {
+    if (["NMS", "NGM", "NCM"].includes(ex)) return "NASDAQ:" + s;
+    if (ex === "NYQ") return "NYSE:" + s;
+    if (["PCX", "ASE"].includes(ex)) return "AMEX:" + s;
+    if (["PNK", "OTC"].includes(ex)) return "OTC:" + s;
+  }
+  return null;
+}
+async function yahooSearch(q) {
+  const target = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&lang=ja-JP&region=JP&quotesCount=8&newsCount=0`;
+  for (const p of JP_PROXIES) {
+    try {
+      const r = await fetchTimeout(p(target), 6000);
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (!j || !Array.isArray(j.quotes)) continue;
+      const out = [];
+      for (const qt of j.quotes) {
+        const sym = yahooToAppSymbol(qt);
+        if (sym && /^[A-Z0-9_]+:[A-Z0-9._!&-]+$/.test(sym.toUpperCase())) {
+          out.push({ name: qt.shortname || qt.longname || sym, symbol: sym });
+        }
+      }
+      if (out.length) return out;
+    } catch (e) {}
+  }
+  return [];
+}
+const inNameEl = document.getElementById("inName");
+const inSymbolEl = document.getElementById("inSymbol");
+const suggListEl = document.getElementById("suggList");
+let suggSeq = 0, suggTimer = null;
+function showSugg(items) {
+  if (!items.length) { suggListEl.style.display = "none"; suggListEl.innerHTML = ""; return; }
+  suggListEl.innerHTML = items.map(e =>
+    `<div class="sugg-item" data-sym="${e.symbol}" data-name="${e.name.replace(/"/g, "&quot;")}">${e.name}<small>${e.symbol}</small></div>`
+  ).join("");
+  suggListEl.style.display = "block";
+  suggListEl.querySelectorAll(".sugg-item").forEach(el => {
+    el.addEventListener("mousedown", ev => { // blurより先に発火させる
+      ev.preventDefault();
+      inNameEl.value = el.dataset.name;
+      inSymbolEl.value = el.dataset.sym;
+      suggListEl.style.display = "none";
+    });
+  });
+}
+inNameEl.addEventListener("input", () => {
+  const q = inNameEl.value.trim();
+  inSymbolEl.value = ""; // 選び直すまでクリア
+  const local = localMatches(q);
+  showSugg(local);
+  clearTimeout(suggTimer);
+  if (q.length >= 1) {
+    const seq = ++suggSeq;
+    suggTimer = setTimeout(async () => {
+      const remote = await yahooSearch(q);
+      if (seq !== suggSeq) return; // 古い検索結果は破棄
+      const seen = new Set(local.map(x => x.symbol));
+      const merged = local.concat(remote.filter(r => !seen.has(r.symbol)));
+      showSugg(merged.slice(0, 12));
+    }, 350);
+  }
+});
+inNameEl.addEventListener("focus", () => {
+  if (inNameEl.value.trim()) showSugg(localMatches(inNameEl.value.trim()));
+});
+inNameEl.addEventListener("blur", () => setTimeout(() => { suggListEl.style.display = "none"; }, 150));
+
 // ===== 追加・リセットUI =====
 const addPanel = document.getElementById("addPanel");
 document.getElementById("addBtn").addEventListener("click", () => {
@@ -933,9 +1123,14 @@ document.getElementById("addBtn").addEventListener("click", () => {
 });
 document.getElementById("cancelAdd").addEventListener("click", () => addPanel.classList.remove("show"));
 document.getElementById("confirmAdd").addEventListener("click", () => {
-  const symbol = document.getElementById("inSymbol").value.trim().toUpperCase();
+  let symbol = document.getElementById("inSymbol").value.trim().toUpperCase();
   let name = document.getElementById("inName").value.trim();
-  if (!symbol) { alert("シンボルを入力してください（例: TSE:6758、NASDAQ:AAPL）"); return; }
+  // シンボル未選択なら、名前から候補を解決（先頭の候補を採用）
+  if (!symbol) {
+    const m = localMatches(name);
+    if (m.length) { symbol = m[0].symbol.toUpperCase(); if (!name) name = m[0].name; }
+  }
+  if (!symbol) { alert("銘柄名で検索して候補から選ぶか、シンボルを入力してください（例: TSE:6758、NASDAQ:AAPL）"); return; }
   if (!/^[A-Z0-9_]+:[A-Z0-9._!&-]+$/.test(symbol)) {
     alert("シンボルは「取引所:ティッカー」の形式で入力してください（例: TSE:6758、NASDAQ:AAPL）");
     return;
