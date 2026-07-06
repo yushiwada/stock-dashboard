@@ -31,7 +31,6 @@ ${cur[0].slice(0, 3500)}
 - 任天堂（東証7974）の直近の株価材料
 - SpaceX（NASDAQ:SPCX、2026/6/12上場）の直近の株価材料
 - 全世界株（MSCI ACWI／オルカン）に関わる大きな材料
-- アナリスト評価が高い・材料が出た注目銘柄（picks用）
 - 前日に±2%超の値動きがあった銘柄はその理由を詳しく
 
 品質基準（必ず守る）:
@@ -53,11 +52,10 @@ ${cur[0].slice(0, 3500)}
    "TSE:7974": {"outlook": "...", "note": "..."},
    "NASDAQ:SPCX": {"outlook": "...", "note": "..."}
  },
- "picks": [ちょうど4銘柄の配列。{"name":"銘柄名","symbol":"チャート用シンボル（米国株=NASDAQ:xxx/NYSE:xxx/AMEX:xxx、東証=TSE:4桁コード。この形式以外は不可）","reason":"注目根拠（アナリスト評価や決算などの事実。数値を含める）","risk":"主なリスク","deadline":"YYYY-MM-DD形式。上昇根拠が実現すると見込む期限。今日から2〜8週間先で、根拠に応じて銘柄ごとに設定（例: 決算が根拠なら決算日直後）"}],
  "summary": "スマホ通知用の朝サマリー。プレーンテキスト3〜5行。今日の注目点・大きな値動きとその理由・今日の主要イベント"
 }
 
-制約: 投資助言はしない（事実とアナリスト見通しの紹介に留める。picksも「注目銘柄の紹介」であり推奨ではない）。各テキストは日本語。`;
+制約: 投資助言はしない（事実とアナリスト見通しの紹介に留める）。各テキストは日本語。`;
 
 // ===== Claude API 呼び出し（pause_turn 継続ループ + 使用量ログ） =====
 const messages = [{ role: "user", content: prompt }];
@@ -119,58 +117,198 @@ const deepClean = o => {
   return o;
 };
 deepClean(out);
-if (!Array.isArray(out.picks)) out.picks = [];
-out.picks = (out.picks || []).filter(p => p && p.name);
-// 銘柄名からティッカーをYahoo検索で確定・検証（Haikuのsymbolはコード取り違えが多いため信用しない）
-function yExch2App(sym, exch) {
-  if (/\.T$/.test(sym)) return "TSE:" + sym.replace(/\.T$/, "");
-  const e = (exch || "").toUpperCase();
-  if (["NMS", "NGM", "NCM"].includes(e)) return "NASDAQ:" + sym;
-  if (e === "NYQ") return "NYSE:" + sym;
-  if (["PCX", "ASE"].includes(e)) return "AMEX:" + sym;
-  if (["JPX", "TYO"].includes(e)) return "TSE:" + sym.replace(/\.T$/, "");
-  return null;
-}
-async function resolveSymbol(name) {
-  const clean = (name || "").replace(/[（(][^）)]*[）)]/g, "").trim();
-  for (const q of [clean, name]) {
-    if (!q) continue;
-    try {
-      const r = await fetch("https://query1.finance.yahoo.com/v1/finance/search?q=" + encodeURIComponent(q) + "&quotesCount=6&newsCount=0",
-        { headers: { "User-Agent": "Mozilla/5.0" } });
-      if (!r.ok) continue;
-      const j = await r.json();
-      for (const it of (j.quotes || [])) {
-        if (it.quoteType !== "EQUITY" && it.quoteType !== "ETF") continue;
-        const s = yExch2App(it.symbol || "", it.exchange);
-        if (s && /^[A-Z0-9_]+:[A-Z0-9.]+$/.test(s)) return s;
-      }
-    } catch (e) {}
-  }
-  return null;
-}
-const verifiedPicks = [];
-for (const p of out.picks) {
-  const resolved = await resolveSymbol(p.name);
-  if (resolved) {
-    if (resolved !== p.symbol) console.log("ティッカー訂正:", p.name, p.symbol, "->", resolved);
-    p.symbol = resolved;
-    verifiedPicks.push(p);
-  } else if (/^(NASDAQ|NYSE|AMEX|OTC):[A-Z0-9.]+$/.test(p.symbol || "")) {
-    verifiedPicks.push(p); // 米国株で解決不能時はHaikuのsymbolを維持（東証はコード誤りが多いので除外）
-  } else {
-    console.log("解決不能のためpicks除外:", p.name, p.symbol);
-  }
-  await new Promise(r => setTimeout(r, 250));
-}
-out.picks = verifiedPicks.slice(0, 4);
-// deadline の補正（不正・近すぎ・遠すぎは28日後に）
+// ===== 注目個別株の選定（数値ベースの複合スコア。Haikuの判断は使わない） =====
+// 事前検証済みの固定ユニバースから、実データ（Yahoo）で計算した複合スコアで上位4件を選ぶ。
+// 因子: モメンタム(3/6ヶ月)・トレンド(50/200日線)・割安(52週レンジ位置)・低ボラ、
+//       取得できればアナリスト目標上昇余地・推奨度。セクター分散(最大2)。
+const UA = "Mozilla/5.0";
 const plus = d => { const t = new Date(todayISO); t.setDate(t.getDate() + d); return t.toISOString().slice(0, 10); };
-for (const p of out.picks) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(p.deadline || "") || p.deadline <= todayISO || p.deadline > plus(70)) {
-    p.deadline = plus(28);
-  }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const UNIVERSE = [
+  { name: "エヌビディア", symbol: "NASDAQ:NVDA", sector: "半導体" },
+  { name: "ブロードコム", symbol: "NASDAQ:AVGO", sector: "半導体" },
+  { name: "AMD", symbol: "NASDAQ:AMD", sector: "半導体" },
+  { name: "マイクロン", symbol: "NASDAQ:MU", sector: "半導体" },
+  { name: "クアルコム", symbol: "NASDAQ:QCOM", sector: "半導体" },
+  { name: "東京エレクトロン", symbol: "TSE:8035", sector: "半導体" },
+  { name: "アドバンテスト", symbol: "TSE:6857", sector: "半導体" },
+  { name: "レーザーテック", symbol: "TSE:6920", sector: "半導体" },
+  { name: "ディスコ", symbol: "TSE:6146", sector: "半導体" },
+  { name: "キオクシア", symbol: "TSE:285A", sector: "半導体" },
+  { name: "アップル", symbol: "NASDAQ:AAPL", sector: "テック" },
+  { name: "マイクロソフト", symbol: "NASDAQ:MSFT", sector: "テック" },
+  { name: "アルファベット", symbol: "NASDAQ:GOOGL", sector: "テック" },
+  { name: "アマゾン", symbol: "NASDAQ:AMZN", sector: "テック" },
+  { name: "メタ", symbol: "NASDAQ:META", sector: "テック" },
+  { name: "ネットフリックス", symbol: "NASDAQ:NFLX", sector: "テック" },
+  { name: "オラクル", symbol: "NYSE:ORCL", sector: "テック" },
+  { name: "パランティア", symbol: "NASDAQ:PLTR", sector: "テック" },
+  { name: "テスラ", symbol: "NASDAQ:TSLA", sector: "自動車" },
+  { name: "トヨタ自動車", symbol: "TSE:7203", sector: "自動車" },
+  { name: "JPモルガン", symbol: "NYSE:JPM", sector: "金融" },
+  { name: "バンク・オブ・アメリカ", symbol: "NYSE:BAC", sector: "金融" },
+  { name: "ビザ", symbol: "NYSE:V", sector: "金融" },
+  { name: "三菱UFJ", symbol: "TSE:8306", sector: "金融" },
+  { name: "三井住友FG", symbol: "TSE:8316", sector: "金融" },
+  { name: "イーライリリー", symbol: "NYSE:LLY", sector: "ヘルスケア" },
+  { name: "ユナイテッドヘルス", symbol: "NYSE:UNH", sector: "ヘルスケア" },
+  { name: "第一三共", symbol: "TSE:4568", sector: "ヘルスケア" },
+  { name: "ウォルマート", symbol: "NYSE:WMT", sector: "消費" },
+  { name: "コストコ", symbol: "NASDAQ:COST", sector: "消費" },
+  { name: "任天堂", symbol: "TSE:7974", sector: "消費" },
+  { name: "ファーストリテイリング", symbol: "TSE:9983", sector: "消費" },
+  { name: "エクソンモービル", symbol: "NYSE:XOM", sector: "エネルギー" },
+  { name: "伊藤忠商事", symbol: "TSE:8001", sector: "商社" },
+  { name: "三菱商事", symbol: "TSE:8058", sector: "商社" },
+  { name: "半導体ETF(SMH)", symbol: "NASDAQ:SMH", sector: "ETF" }
+];
+const toYahoo = sym => sym.startsWith("TSE:") ? sym.slice(4) + ".T" : sym.split(":")[1];
+async function chartMetrics(sym) {
+  try {
+    const y = toYahoo(sym);
+    const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${y}?range=1y&interval=1d`, { headers: { "User-Agent": UA } });
+    if (!r.ok) return null;
+    const res = ((await r.json()).chart || {}).result;
+    const R = res && res[0];
+    if (!R || !R.timestamp) return null;
+    const q = R.indicators.quote[0].close;
+    const closes = R.timestamp.map((t, i) => q[i]).filter(x => x != null);
+    if (closes.length < 60) return null;
+    const price = closes[closes.length - 1];
+    // 明らかな異常ティック（データ破損）を弾く: 直近値が1年の中央値の8倍超/1/8未満なら除外
+    const med = [...closes].sort((a, b) => a - b)[Math.floor(closes.length / 2)];
+    if (med && (price > med * 8 || price < med / 8)) return null;
+    const at = n => closes[Math.max(0, closes.length - 1 - n)];
+    const ret = n => { const p0 = at(n); return p0 ? price / p0 - 1 : null; };
+    const sma = n => { const s = closes.slice(-n); return s.length ? s.reduce((a, b) => a + b, 0) / s.length : null; };
+    const win = closes.slice(-252);
+    const hi = Math.max(...win), lo = Math.min(...win);
+    const posInRange = hi > lo ? (price - lo) / (hi - lo) : 0.5;
+    const rec = closes.slice(-61);
+    const rr = []; for (let i = 1; i < rec.length; i++) rr.push(rec[i] / rec[i - 1] - 1);
+    const mu = rr.reduce((a, b) => a + b, 0) / rr.length;
+    const vol = Math.sqrt(rr.reduce((a, b) => a + (b - mu) ** 2, 0) / rr.length);
+    return { price, ret3m: ret(63), ret6m: ret(126), sma50: sma(50), sma200: sma(200), posInRange, vol };
+  } catch (e) { return null; }
 }
+// アナリスト系（任意・取得できなければ無視）。Yahoo quoteSummary は cookie+crumb が必要。
+let _crumb = null, _cookie = null;
+async function ensureCrumb() {
+  if (_crumb !== null) return _crumb;
+  try {
+    const r1 = await fetch("https://fc.yahoo.com/", { headers: { "User-Agent": UA } });
+    const sc = r1.headers.getSetCookie ? r1.headers.getSetCookie() : [r1.headers.get("set-cookie")].filter(Boolean);
+    _cookie = sc.map(c => c.split(";")[0]).join("; ");
+    const r2 = await fetch("https://query2.finance.yahoo.com/v1/test/getcrumb", { headers: { "User-Agent": UA, "Cookie": _cookie } });
+    const t = (await r2.text()).trim();
+    _crumb = (!t || t.length > 20 || /[<>]|error/i.test(t)) ? "" : t;
+  } catch (e) { _crumb = ""; }
+  return _crumb;
+}
+async function analystExtra(sym) {
+  const crumb = await ensureCrumb();
+  if (!crumb) return {};
+  try {
+    const y = toYahoo(sym);
+    const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${y}?modules=financialData,calendarEvents&crumb=${encodeURIComponent(crumb)}`;
+    const r = await fetch(url, { headers: { "User-Agent": UA, "Cookie": _cookie } });
+    if (!r.ok) return {};
+    const res = ((await r.json()).quoteSummary || {}).result;
+    const R = res && res[0];
+    if (!R) return {};
+    const fd = R.financialData || {};
+    const price = fd.currentPrice && fd.currentPrice.raw, tgt = fd.targetMeanPrice && fd.targetMeanPrice.raw;
+    const recMean = fd.recommendationMean && fd.recommendationMean.raw;
+    const analystUp = (price && tgt) ? tgt / price - 1 : null;
+    let earningsInDays = null;
+    const ce = R.calendarEvents && R.calendarEvents.earnings && R.calendarEvents.earnings.earningsDate;
+    if (ce && ce[0] && ce[0].raw) earningsInDays = Math.round((ce[0].raw * 1000 - Date.now()) / 86400000);
+    return { analystUp, recMean: recMean != null ? recMean : null, earningsInDays };
+  } catch (e) { return {}; }
+}
+function zscores(arr) {
+  const v = arr.filter(x => x != null && isFinite(x));
+  if (v.length < 2) return arr.map(() => 0);
+  const m = v.reduce((a, b) => a + b, 0) / v.length;
+  const sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length) || 1;
+  return arr.map(x => (x != null && isFinite(x)) ? (x - m) / sd : null);
+}
+const WEIGHTS = { momentum: 0.30, trend: 0.20, analystUp: 0.18, rating: 0.10, value: 0.12, lowVol: 0.10 };
+function scoreAndSelect(cands, opts) {
+  const maxPerSector = (opts && opts.maxPerSector) || 2;
+  const topN = (opts && opts.topN) || 4;
+  const mom = cands.map(c => (c.ret3m != null && c.ret6m != null) ? 0.5 * c.ret3m + 0.5 * c.ret6m : null);
+  const up = cands.map(c => c.analystUp != null ? c.analystUp : null);
+  const val = cands.map(c => c.posInRange != null ? (1 - c.posInRange) : null);
+  const vol = cands.map(c => c.vol != null ? c.vol : null);
+  const rating = cands.map(c => c.recMean != null ? (3 - c.recMean) : null);
+  const zMom = zscores(mom), zUp = zscores(up), zVal = zscores(val), zVol = zscores(vol), zRating = zscores(rating);
+  const scored = cands.map((c, i) => {
+    const trend = ((c.price > c.sma50 ? 0.5 : 0) + (c.sma50 > c.sma200 ? 0.5 : 0));
+    const parts = [
+      ["momentum", zMom[i]],
+      ["trend", trend * 2 - 1],
+      ["analystUp", zUp[i]],
+      ["rating", zRating[i]],
+      ["value", zVal[i]],
+      ["lowVol", zVol[i] != null ? -zVol[i] : null]
+    ];
+    let wsum = 0, s = 0;
+    for (const kv of parts) { if (kv[1] != null) { s += WEIGHTS[kv[0]] * kv[1]; wsum += WEIGHTS[kv[0]]; } }
+    return Object.assign({}, c, { trend, score: wsum > 0 ? s / wsum : -Infinity });
+  });
+  scored.sort((a, b) => b.score - a.score);
+  const picked = [], sec = {};
+  for (const c of scored) {
+    const n = sec[c.sector] || 0;
+    if (n >= maxPerSector) continue;
+    picked.push(c); sec[c.sector] = n + 1;
+    if (picked.length >= topN) break;
+  }
+  return picked;
+}
+const pct = x => (x >= 0 ? "+" : "") + (x * 100).toFixed(0) + "%";
+function buildReason(c) {
+  const b = [];
+  if (c.ret3m != null && c.ret6m != null) b.push(`3ヶ月${pct(c.ret3m)}・6ヶ月${pct(c.ret6m)}のモメンタム`);
+  if (c.price > c.sma50 && c.sma50 > c.sma200) b.push("50日・200日移動平均線の上で上昇トレンド");
+  else if (c.price > c.sma50) b.push("50日線を上回り短期は堅調");
+  if (c.analystUp != null) b.push(`アナリスト平均目標まで${pct(c.analystUp)}の余地`);
+  if (c.posInRange != null) b.push(`52週レンジの${Math.round(c.posInRange * 100)}%の位置`);
+  return b.join("、") + "。（数値スコアで自動選定）";
+}
+function buildRisk(c) {
+  const b = [];
+  if (c.vol != null) b.push(`日次ボラティリティ${(c.vol * 100).toFixed(1)}%${c.vol > 0.03 ? "と高め" : ""}`);
+  if (c.posInRange != null && c.posInRange > 0.9) b.push("52週高値圏で過熱感に注意");
+  if (c.sector === "半導体") b.push("半導体市況の反落リスク");
+  else if (c.sector === "金融") b.push("金利動向の影響");
+  else if (c.sector === "エネルギー") b.push("原油価格の変動");
+  b.push("モメンタム失速時の反落");
+  return b.join("、") + "。";
+}
+const deadlineFor = c => (c.earningsInDays != null && c.earningsInDays >= 5 && c.earningsInDays <= 45) ? plus(c.earningsInDays + 1) : plus(28);
+async function selectPicks() {
+  const cands = [];
+  for (const u of UNIVERSE) {
+    const m = await chartMetrics(u.symbol);
+    if (m) cands.push(Object.assign({}, u, m));
+    await sleep(120);
+  }
+  console.log("picks: チャート取得", cands.length, "/", UNIVERSE.length);
+  if (cands.length < 4) return [];
+  // Phase1: チャートのみで順位付け → 上位を絞る
+  const prelim = scoreAndSelect(cands, { maxPerSector: 99, topN: cands.length });
+  const shortlist = prelim.slice(0, Math.min(14, prelim.length));
+  // Phase2: 上位のみアナリスト/決算を付与
+  for (const c of shortlist) { Object.assign(c, await analystExtra(c.symbol)); await sleep(120); }
+  const finalPicks = scoreAndSelect(shortlist, { maxPerSector: 2, topN: 4 });
+  for (const p of finalPicks) console.log("採用:", p.name, p.symbol, "score=" + p.score.toFixed(3));
+  return finalPicks.map(c => ({ name: c.name, symbol: c.symbol, reason: buildReason(c), risk: buildRisk(c), deadline: deadlineFor(c) }));
+}
+try { out.picks = await selectPicks(); }
+catch (e) { console.log("picks選定に失敗:", e.message); out.picks = []; }
+if (!Array.isArray(out.picks)) out.picks = [];
 
 // ===== 株価取得（Actionsのサーバー環境からはYahooに直接アクセス可能） =====
 async function yQuote(symbol) {
