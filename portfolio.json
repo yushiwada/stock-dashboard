@@ -1,9 +1,50 @@
 {
-  "investedJPY": 0,
+  "investedJPY": 4000,
   "realizedJPY": 0,
-  "valuationJPY": 0,
-  "open": [],
+  "valuationJPY": 4000,
+  "open": [
+    {
+      "symbol": "TSE:6976",
+      "name": "TAIYO YUDEN CO LTD",
+      "buyDate": "2026-07-06",
+      "units": 0.054392167527875984,
+      "buyPriceJPY": 18385,
+      "peakJPY": 18385,
+      "costJPY": 1000,
+      "curValueJPY": 1000
+    },
+    {
+      "symbol": "TSE:285A",
+      "name": "KIOXIA HOLDINGS CORPORATION",
+      "buyDate": "2026-07-06",
+      "units": 0.012256403971074886,
+      "buyPriceJPY": 81590,
+      "peakJPY": 81590,
+      "costJPY": 1000,
+      "curValueJPY": 1000
+    },
+    {
+      "symbol": "TSE:3436",
+      "name": "SUMCO CORPORATION",
+      "buyDate": "2026-07-06",
+      "units": 0.19338619222587508,
+      "buyPriceJPY": 5171,
+      "peakJPY": 5171,
+      "costJPY": 1000,
+      "curValueJPY": 1000
+    },
+    {
+      "symbol": "NASDAQ:ALAB",
+      "name": "Astera Labs, Inc.",
+      "buyDate": "2026-07-06",
+      "units": 0.013707483406193497,
+      "buyPriceJPY": 72952.85,
+      "peakJPY": 72952.8514,
+      "costJPY": 1000,
+      "curValueJPY": 1000
+    }
+  ],
   "closed": [],
-  "lastBuyDate": null,
+  "lastBuyDate": "2026-07-06",
   "updated": "2026-07-06"
 }
