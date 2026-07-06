@@ -1,7 +1,7 @@
 {
   "investedJPY": 4000,
   "realizedJPY": 0,
-  "valuationJPY": 4000,
+  "valuationJPY": 3994.6,
   "open": [
     {
       "symbol": "TSE:6976",
@@ -11,7 +11,8 @@
       "buyPriceJPY": 18385,
       "peakJPY": 18385,
       "costJPY": 1000,
-      "curValueJPY": 1000
+      "curValueJPY": 1000,
+      "trailPct": 25
     },
     {
       "symbol": "TSE:285A",
@@ -21,7 +22,8 @@
       "buyPriceJPY": 81590,
       "peakJPY": 81590,
       "costJPY": 1000,
-      "curValueJPY": 1000
+      "curValueJPY": 1000,
+      "trailPct": 25
     },
     {
       "symbol": "TSE:3436",
@@ -31,7 +33,8 @@
       "buyPriceJPY": 5171,
       "peakJPY": 5171,
       "costJPY": 1000,
-      "curValueJPY": 1000
+      "curValueJPY": 1000,
+      "trailPct": 22.6
     },
     {
       "symbol": "NASDAQ:ALAB",
@@ -41,10 +44,30 @@
       "buyPriceJPY": 72952.85,
       "peakJPY": 72952.8514,
       "costJPY": 1000,
-      "curValueJPY": 1000
+      "curValueJPY": 994.6,
+      "trailPct": 25
     }
   ],
   "closed": [],
   "lastBuyDate": "2026-07-06",
-  "updated": "2026-07-06"
+  "updated": "2026-07-06",
+  "benchmark": {
+    "symbol": "TSE:2559",
+    "name": "オルカン（MAXIS全世界株式 2559）",
+    "investedJPY": 4000,
+    "units": 1.3360053440213762,
+    "lastBuyDate": "2026-07-06",
+    "startDate": "2026-07-06",
+    "lastPriceJPY": 2994,
+    "valuationJPY": 4000
+  },
+  "history": [
+    {
+      "date": "2026-07-06",
+      "inv": 4000,
+      "val": 3994.6,
+      "bInv": 4000,
+      "bVal": 4000
+    }
+  ]
 }
