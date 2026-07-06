@@ -270,11 +270,12 @@ function scoreAndSelect(cands, opts) {
 const pct = x => (x >= 0 ? "+" : "") + (x * 100).toFixed(0) + "%";
 function buildReason(c) {
   const b = [];
-  if (c.ret3m != null && c.ret6m != null) b.push(`3ヶ月${pct(c.ret3m)}・6ヶ月${pct(c.ret6m)}のモメンタム`);
-  if (c.price > c.sma50 && c.sma50 > c.sma200) b.push("50日・200日移動平均線の上で上昇トレンド");
-  else if (c.price > c.sma50) b.push("50日線を上回り短期は堅調");
+  if (c.ret6m != null) b.push(`200日線比${pct(c.ret6m)}・50日線比${pct(c.ret3m)}の上昇基調`);
+  if (c.price > c.sma50 && c.sma50 > c.sma200) b.push("50日・200日移動平均線がともに上向きの強いトレンド");
+  else if (c.price > c.sma50) b.push("50日線を上回り短期堅調");
   if (c.analystUp != null) b.push(`アナリスト平均目標まで${pct(c.analystUp)}の余地`);
   if (c.posInRange != null) b.push(`52週レンジの${Math.round(c.posInRange * 100)}%の位置`);
+  if (c.mcDisp) b.push(c.mcDisp);
   return b.join("、") + "。（数値スコアで自動選定）";
 }
 function buildRisk(c) {
@@ -288,27 +289,121 @@ function buildRisk(c) {
   return b.join("、") + "。";
 }
 const deadlineFor = c => (c.earningsInDays != null && c.earningsInDays >= 5 && c.earningsInDays <= 45) ? plus(c.earningsInDays + 1) : plus(28);
-async function selectPicks() {
-  const cands = [];
-  for (const u of UNIVERSE) {
-    const m = await chartMetrics(u.symbol);
-    if (m) cands.push(Object.assign({}, u, m));
-    await sleep(120);
+// ===== 2000銘柄ユニバース: Yahooスクリーナーで時価総額順に取得（失敗時は固定リストにフォールバック）=====
+async function screenerPage(region, offset) {
+  const crumb = await ensureCrumb();
+  if (!crumb) return [];
+  try {
+    const r = await fetch(`https://query1.finance.yahoo.com/v1/finance/screener?crumb=${encodeURIComponent(crumb)}&lang=en-US&region=US`, {
+      method: "POST",
+      headers: { "User-Agent": UA, "Cookie": _cookie, "content-type": "application/json" },
+      body: JSON.stringify({
+        size: 250, offset, sortField: "intradaymarketcap", sortType: "DESC", quoteType: "EQUITY", topOperator: "AND",
+        query: { operator: "AND", operands: [{ operator: "EQ", operands: ["region", region] }] },
+        userId: "", userIdType: "guid"
+      })
+    });
+    if (!r.ok) return [];
+    const res = ((await r.json()).finance || {}).result;
+    return (res && res[0] && res[0].quotes) || [];
+  } catch (e) { return []; }
+}
+function toAppSym(q) {
+  const s = q.symbol || "";
+  if (/\.T$/.test(s)) { const c = s.replace(/\.T$/, ""); return /^[0-9A-Z]{4,5}$/.test(c) ? "TSE:" + c : null; }
+  const ex = (q.exchange || "").toUpperCase();
+  if (["NMS", "NGM", "NCM"].includes(ex)) return "NASDAQ:" + s;
+  if (ex === "NYQ") return "NYSE:" + s;
+  if (["PCX", "ASE"].includes(ex)) return "AMEX:" + s;
+  return null;
+}
+async function ensureUniverse() {
+  try {
+    const u = JSON.parse(fs.readFileSync("universe.json", "utf8"));
+    if (u && Array.isArray(u.list) && u.list.length > 500 && u.fetched && (Date.now() - new Date(u.fetched)) < 7 * 864e5) {
+      console.log("universe: キャッシュ利用", u.list.length); return u.list;
+    }
+  } catch (e) {}
+  const seen = new Set(), list = [];
+  for (const region of ["us", "jp"]) {
+    for (let off = 0; off < 1500; off += 250) {
+      const quotes = await screenerPage(region, off);
+      if (!quotes.length) break;
+      for (const q of quotes) {
+        const sym = toAppSym(q);
+        if (!sym || seen.has(sym)) continue;
+        seen.add(sym);
+        list.push({ name: q.shortName || q.longName || sym.split(":")[1], symbol: sym, ysym: q.symbol });
+      }
+      await sleep(200);
+      if (quotes.length < 250) break;
+    }
   }
-  console.log("picks: チャート取得", cands.length, "/", UNIVERSE.length);
-  if (cands.length < 4) return [];
-  // Phase1: チャートのみで順位付け → 上位を絞る
-  const prelim = scoreAndSelect(cands, { maxPerSector: 99, topN: cands.length });
-  const shortlist = prelim.slice(0, Math.min(14, prelim.length));
-  // Phase2: 上位のみアナリスト/決算を付与
-  for (const c of shortlist) { Object.assign(c, await analystExtra(c.symbol)); await sleep(120); }
-  // 保有中の銘柄は除外し、複合スコア最上位の1銘柄だけを選ぶ（1日1ピック）
+  if (list.length < 500) {
+    console.log("universe: スクリーナー不足→固定リストにフォールバック", list.length);
+    return UNIVERSE.map(u => ({ name: u.name, symbol: u.symbol, ysym: toYahoo(u.symbol) }));
+  }
+  try { fs.writeFileSync("universe.json", JSON.stringify({ fetched: new Date().toISOString(), list })); } catch (e) {}
+  console.log("universe: スクリーナー取得", list.length);
+  return list;
+}
+// ===== バッチで価格・50/200日線・52週高安・時価総額・出来高を一括取得（1回200銘柄）=====
+async function batchQuotes(entries) {
+  const crumb = await ensureCrumb();
+  const out = {};
+  for (let i = 0; i < entries.length; i += 200) {
+    const syms = entries.slice(i, i + 200).map(e => e.ysym).join(",");
+    try {
+      const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(syms)}${crumb ? "&crumb=" + encodeURIComponent(crumb) : ""}`;
+      const r = await fetch(url, { headers: { "User-Agent": UA, "Cookie": _cookie || "" } });
+      if (r.ok) { const res = ((await r.json()).quoteResponse || {}).result || []; for (const q of res) out[q.symbol] = q; }
+    } catch (e) {}
+    await sleep(200);
+  }
+  return out;
+}
+// バッチ経路が使えない場合の保険: 実績あるチャート取得で固定リストから1銘柄選ぶ
+async function selectPicksFallback() {
+  const cands = [];
+  for (const u of UNIVERSE) { const m = await chartMetrics(u.symbol); if (m) cands.push(Object.assign({}, u, m)); await sleep(120); }
+  if (cands.length < 1) return [];
   let held = new Set();
   try { const pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8")); held = new Set((pf.open || []).map(p => p.symbol)); } catch (e) {}
-  const ranked = scoreAndSelect(shortlist, { maxPerSector: 99, topN: shortlist.length });
+  const ranked = scoreAndSelect(cands, { maxPerSector: 9999, topN: cands.length });
+  const top = ranked.find(c => !held.has(c.symbol));
+  if (!top) return [];
+  console.log("採用(フォールバック):", top.name, top.symbol);
+  return [{ name: top.name, symbol: top.symbol, reason: buildReason(top), risk: buildRisk(top) }];
+}
+async function selectPicks() {
+  const universe = await ensureUniverse();
+  const q = await batchQuotes(universe);
+  console.log("picks: バッチ取得", Object.keys(q).length, "/", universe.length);
+  const cands = [];
+  for (const u of universe) {
+    const d = q[u.ysym];
+    if (!d) continue;
+    const price = d.regularMarketPrice, ma50 = d.fiftyDayAverage, ma200 = d.twoHundredDayAverage;
+    const hi = d.fiftyTwoWeekHigh, lo = d.fiftyTwoWeekLow;
+    if (!price || !ma50 || !ma200 || !hi || !lo || hi <= lo) continue;
+    const mc = d.marketCap || 0, vol = d.averageDailyVolume3Month || d.regularMarketVolume || 0;
+    const jpy = d.currency === "JPY";
+    if (mc < (jpy ? 2e11 : 2e9)) continue;          // 時価総額 約2000億円 / 20億ドル 以上
+    if (price * vol < (jpy ? 1e9 : 1e7)) continue;  // 1日売買代金 約10億円 / 1000万ドル 以上
+    cands.push({
+      name: u.name, symbol: u.symbol, price, sma50: ma50, sma200: ma200,
+      posInRange: (price - lo) / (hi - lo), ret3m: price / ma50 - 1, ret6m: price / ma200 - 1, vol: null,
+      mcDisp: jpy ? `時価総額${Math.round(mc / 1e8)}億円` : `時価総額${(mc / 1e9).toFixed(0)}十億ドル`
+    });
+  }
+  console.log("picks: フィルタ後候補", cands.length);
+  if (cands.length < 5) { console.log("バッチ選定が不十分→チャート経路にフォールバック"); return await selectPicksFallback(); }
+  let held = new Set();
+  try { const pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8")); held = new Set((pf.open || []).map(p => p.symbol)); } catch (e) {}
+  const ranked = scoreAndSelect(cands, { maxPerSector: 9999, topN: cands.length });
   const top = ranked.find(c => !held.has(c.symbol));
   if (!top) { console.log("採用なし（候補が全て保有中）"); return []; }
-  console.log("採用:", top.name, top.symbol, "score=" + top.score.toFixed(3));
+  console.log("採用:", top.name, top.symbol, "score=" + top.score.toFixed(3), "候補", cands.length, "銘柄から");
   return [{ name: top.name, symbol: top.symbol, reason: buildReason(top), risk: buildRisk(top) }];
 }
 try { out.picks = await selectPicks(); }
