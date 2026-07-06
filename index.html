@@ -283,7 +283,7 @@
     <button class="btn" id="confirmAdd">追加する</button>
     <button class="btn" id="cancelAdd">キャンセル</button>
     <div class="hint">
-      形式は「取引所:ティッカー」。<b style="color:var(--text)">東証銘柄は TSE:4桁コード（例: 任天堂→TSE:7974）でOK</b>──Yahoo Financeから自動取得します。
+      形式は「取引所:ティッカー」。<b style="color:var(--text)">東証銘柄は TSE:証券コード（例: 任天堂→TSE:7974、キオクシア→TSE:285A）でOK</b>──Yahoo Financeから自動取得します。
       米国株は NASDAQ:xxx / NYSE:xxx / AMEX:xxx、指数はCFD（FOREXCOM:SPXUSD, FOREXCOM:JP225 等）。
       シンボルは <a href="https://jp.tradingview.com/" target="_blank" style="color:var(--accent)">TradingView</a> や <a href="https://finance.yahoo.co.jp/" target="_blank" style="color:var(--accent)">Yahoo!ファイナンス</a> で検索できます。
     </div>
@@ -1000,6 +1000,11 @@ const NAME_INDEX = [
   { name: "三井物産", symbol: "TSE:8031", aliases: ["mitsui", "みついぶっさん", "8031"] },
   { name: "日本製鉄", symbol: "TSE:5401", aliases: ["nippon steel", "にっぽんせいてつ", "5401"] },
   { name: "三菱重工業", symbol: "TSE:7011", aliases: ["mhi", "みつびしじゅうこう", "7011"] },
+  { name: "キオクシアホールディングス", symbol: "TSE:285A", aliases: ["kioxia", "きおくしあ", "285a", "半導体メモリ"] },
+  { name: "レゾナック・ホールディングス", symbol: "TSE:4004", aliases: ["resonac", "れぞなっく", "4004"] },
+  { name: "フジクラ", symbol: "TSE:5803", aliases: ["fujikura", "ふじくら", "5803"] },
+  { name: "楽天グループ", symbol: "TSE:4755", aliases: ["rakuten", "らくてん", "4755"] },
+  { name: "メルカリ", symbol: "TSE:4385", aliases: ["mercari", "めるかり", "4385"] },
   // 米国株
   { name: "アップル（Apple）", symbol: "NASDAQ:AAPL", aliases: ["apple", "あっぷる", "aapl"] },
   { name: "エヌビディア（NVIDIA）", symbol: "NASDAQ:NVDA", aliases: ["nvidia", "えぬびでぃあ", "nvda"] },
@@ -1050,7 +1055,7 @@ function yahooToAppSymbol(qt) {
   const type = qt.quoteType || "";
   if (/\.T$/.test(s)) {
     const code = s.replace(/\.T$/, "");
-    return /^\d{4}\d?$/.test(code) ? "TSE:" + code : null;
+    return /^[0-9A-Z]{4,5}$/i.test(code) ? "TSE:" + code.toUpperCase() : null;
   }
   if (type === "EQUITY" || type === "ETF") {
     if (["NMS", "NGM", "NCM"].includes(ex)) return "NASDAQ:" + s;
@@ -1175,8 +1180,8 @@ document.getElementById("confirmAdd").addEventListener("click", () => {
     alert("シンボルは「取引所:ティッカー」の形式で入力してください（例: TSE:6758、NASDAQ:AAPL）");
     return;
   }
-  if (/^TSE:/.test(symbol) && !/^TSE:\d{4}\d?$/.test(symbol)) {
-    alert("東証銘柄は TSE:4桁の証券コード で入力してください（例: 任天堂→TSE:7974、ソニー→TSE:6758）");
+  if (/^TSE:/.test(symbol) && !/^TSE:[0-9A-Z]{4,5}$/.test(symbol)) {
+    alert("東証銘柄は TSE:証券コード で入力してください（例: 任天堂→TSE:7974、キオクシア→TSE:285A）");
     return;
   }
   if (list.some(x => x.symbol === symbol)) { alert("この銘柄はすでに追加されています。"); return; }
