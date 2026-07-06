@@ -1,7 +1,7 @@
 {
-  "investedJPY": 4000,
+  "investedJPY": 8000,
   "realizedJPY": 0,
-  "valuationJPY": 3994.6,
+  "valuationJPY": 7961.4,
   "open": [
     {
       "symbol": "TSE:6976",
@@ -44,22 +44,66 @@
       "buyPriceJPY": 72952.85,
       "peakJPY": 72952.8514,
       "costJPY": 1000,
-      "curValueJPY": 994.6,
+      "curValueJPY": 961.4,
       "trailPct": 25
+    },
+    {
+      "symbol": "TSE:6976",
+      "name": "TAIYO YUDEN CO LTD",
+      "sector": "Technology",
+      "buyDate": "2026-07-07",
+      "units": 0.054392167527875984,
+      "buyPriceJPY": 18385,
+      "peakJPY": 18385,
+      "costJPY": 1000,
+      "curValueJPY": 1000
+    },
+    {
+      "symbol": "TSE:285A",
+      "name": "KIOXIA HOLDINGS CORPORATION",
+      "sector": "Technology",
+      "buyDate": "2026-07-07",
+      "units": 0.012256403971074886,
+      "buyPriceJPY": 81590,
+      "peakJPY": 81590,
+      "costJPY": 1000,
+      "curValueJPY": 1000
+    },
+    {
+      "symbol": "NASDAQ:MRNA",
+      "name": "Moderna, Inc.",
+      "sector": "Healthcare",
+      "buyDate": "2026-07-07",
+      "units": 0.07542347718038563,
+      "buyPriceJPY": 13258.47,
+      "peakJPY": 13258.4712,
+      "costJPY": 1000,
+      "curValueJPY": 1000
+    },
+    {
+      "symbol": "TSE:6101",
+      "name": "TSUGAMI CORP",
+      "sector": "Industrials",
+      "buyDate": "2026-07-07",
+      "units": 0.12345679012345678,
+      "buyPriceJPY": 8100,
+      "peakJPY": 8100,
+      "costJPY": 1000,
+      "curValueJPY": 1000
     }
   ],
   "closed": [],
-  "lastBuyDate": "2026-07-06",
-  "updated": "2026-07-06",
+  "lastBuyDate": "2026-07-07",
+  "updated": "2026-07-07",
   "benchmark": {
     "symbol": "TSE:2559",
     "name": "オルカン（MAXIS全世界株式 2559）",
-    "investedJPY": 4000,
-    "units": 1.3360053440213762,
-    "lastBuyDate": "2026-07-06",
+    "investedJPY": 8000,
+    "units": 2.6720106880427523,
+    "lastBuyDate": "2026-07-07",
     "startDate": "2026-07-06",
     "lastPriceJPY": 2994,
-    "valuationJPY": 4000
+    "valuationJPY": 8000
   },
   "history": [
     {
@@ -68,6 +112,13 @@
       "val": 3994.6,
       "bInv": 4000,
       "bVal": 4000
+    },
+    {
+      "date": "2026-07-07",
+      "inv": 8000,
+      "val": 7961.4,
+      "bInv": 8000,
+      "bVal": 8000
     }
   ]
 }
