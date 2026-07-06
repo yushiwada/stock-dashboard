@@ -1,6 +1,9 @@
 // 毎朝の「展望と考察」自動更新スクリプト（GitHub Actionsで実行）
-// 1) Claude API（ウェブ検索付き）で最新情報を調べ、index.html の ANALYSIS ブロックを書き換える
-// 2) 選定銘柄を毎日100円ずつ仮想購入し、期限日に売却する積立シミュレーション（portfolio.json）を更新する
+// 1) Claude API（Haiku・ウェブ検索付き）で最新情報を調べ、index.html の ANALYSIS ブロックを書き換える
+//    ※銘柄選定はLLMを使わず数値ベース（毎日Haikuの解説文コストのみで運用できる設計）
+// 2) 複合スコア上位4銘柄を毎日1000円ずつ仮想購入（セクター上限2・決算±3日回避）、
+//    売却はATR連動トレーリングストップ（ATR14×3、8〜25%）と50日線割れのみ（保有期限なし）
+// 3) 対照実験: オルカン相当（TSE:2559 MAXIS全世界株式）を毎日4000円仮想積立して比較
 import fs from "node:fs";
 
 const API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -91,6 +94,15 @@ for (let turn = 0; turn < 8; turn++) {
     }
     continue;
   }
+  // ウェブ検索が一時的に使えずJSONが出せなかった場合は少し待って再試行（一過性障害対策）
+  const txt = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
+  if (!/\{[\s\S]*\}/.test(txt) && turn < 7) {
+    console.log("JSONなし（検索障害の可能性）→ 60秒待って再試行");
+    await new Promise(r => setTimeout(r, 60000));
+    messages.length = 0;
+    messages.push({ role: "user", content: prompt });
+    continue;
+  }
   break;
 }
 // Haiku 4.5: 入力$1/M・出力$5/M、ウェブ検索$10/1000回
@@ -118,11 +130,9 @@ const deepClean = o => {
 };
 deepClean(out);
 // ===== 注目個別株の選定（数値ベースの複合スコア。Haikuの判断は使わない） =====
-// 事前検証済みの固定ユニバースから、実データ（Yahoo）で計算した複合スコアで上位4件を選ぶ。
-// 因子: モメンタム(3/6ヶ月)・トレンド(50/200日線)・割安(52週レンジ位置)・低ボラ、
-//       取得できればアナリスト目標上昇余地・推奨度。セクター分散(最大2)。
+// 2000銘柄超のユニバースから複合スコア上位を選び、
+// ①決算発表±3日以内は回避 ②同一セクター最大2銘柄 の制約で4銘柄採用。
 const UA = "Mozilla/5.0";
-const plus = d => { const t = new Date(todayISO); t.setDate(t.getDate() + d); return t.toISOString().slice(0, 10); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const UNIVERSE = [
   { name: "エヌビディア", symbol: "NASDAQ:NVDA", sector: "半導体" },
@@ -171,8 +181,10 @@ async function chartMetrics(sym) {
     const res = ((await r.json()).chart || {}).result;
     const R = res && res[0];
     if (!R || !R.timestamp) return null;
-    const q = R.indicators.quote[0].close;
-    const closes = R.timestamp.map((t, i) => q[i]).filter(x => x != null);
+    const qd = R.indicators.quote[0];
+    const rows = R.timestamp.map((t, i) => ({ c: qd.close[i], h: qd.high && qd.high[i], l: qd.low && qd.low[i] }))
+      .filter(x => x.c != null);
+    const closes = rows.map(x => x.c);
     if (closes.length < 60) return null;
     const price = closes[closes.length - 1];
     // 明らかな異常ティック（データ破損）を弾く: 直近値が1年の中央値の8倍超/1/8未満なら除外
@@ -188,10 +200,23 @@ async function chartMetrics(sym) {
     const rr = []; for (let i = 1; i < rec.length; i++) rr.push(rec[i] / rec[i - 1] - 1);
     const mu = rr.reduce((a, b) => a + b, 0) / rr.length;
     const vol = Math.sqrt(rr.reduce((a, b) => a + (b - mu) ** 2, 0) / rr.length);
-    return { price, ret3m: ret(63), ret6m: ret(126), sma50: sma(50), sma200: sma(200), posInRange, vol };
+    // ATR14（平均的な1日の値動き幅。ストップ幅の算出に使用）
+    let atrRatio = null;
+    const rws = rows.slice(-15);
+    if (rws.length >= 8) {
+      const trs = [];
+      for (let i = 1; i < rws.length; i++) {
+        const pc = rws[i - 1].c;
+        const h = rws[i].h != null ? rws[i].h : rws[i].c;
+        const l = rws[i].l != null ? rws[i].l : rws[i].c;
+        trs.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
+      }
+      atrRatio = trs.reduce((a, b) => a + b, 0) / trs.length / price;
+    }
+    return { price, ret3m: ret(63), ret6m: ret(126), sma50: sma(50), sma200: sma(200), posInRange, vol, atrRatio };
   } catch (e) { return null; }
 }
-// アナリスト系（任意・取得できなければ無視）。Yahoo quoteSummary は cookie+crumb が必要。
+// Yahoo quoteSummary（cookie+crumb が必要）: セクター・決算日・アナリスト目標を取得
 let _crumb = null, _cookie = null;
 async function ensureCrumb() {
   if (_crumb !== null) return _crumb;
@@ -205,12 +230,12 @@ async function ensureCrumb() {
   } catch (e) { _crumb = ""; }
   return _crumb;
 }
-async function analystExtra(sym) {
+async function enrichExtra(sym) {
   const crumb = await ensureCrumb();
   if (!crumb) return {};
   try {
     const y = toYahoo(sym);
-    const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${y}?modules=financialData,calendarEvents&crumb=${encodeURIComponent(crumb)}`;
+    const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${y}?modules=financialData,calendarEvents,assetProfile&crumb=${encodeURIComponent(crumb)}`;
     const r = await fetch(url, { headers: { "User-Agent": UA, "Cookie": _cookie } });
     if (!r.ok) return {};
     const res = ((await r.json()).quoteSummary || {}).result;
@@ -223,7 +248,8 @@ async function analystExtra(sym) {
     let earningsInDays = null;
     const ce = R.calendarEvents && R.calendarEvents.earnings && R.calendarEvents.earnings.earningsDate;
     if (ce && ce[0] && ce[0].raw) earningsInDays = Math.round((ce[0].raw * 1000 - Date.now()) / 86400000);
-    return { analystUp, recMean: recMean != null ? recMean : null, earningsInDays };
+    const sectorName = (R.assetProfile && R.assetProfile.sector) || null;
+    return { analystUp, recMean: recMean != null ? recMean : null, earningsInDays, sectorName };
   } catch (e) { return {}; }
 }
 function zscores(arr) {
@@ -276,19 +302,21 @@ function buildReason(c) {
   if (c.analystUp != null) b.push(`アナリスト平均目標まで${pct(c.analystUp)}の余地`);
   if (c.posInRange != null) b.push(`52週レンジの${Math.round(c.posInRange * 100)}%の位置`);
   if (c.mcDisp) b.push(c.mcDisp);
+  if (c.sectorName) b.push(`セクター: ${c.sectorName}`);
   return b.join("、") + "。（数値スコアで自動選定）";
 }
 function buildRisk(c) {
   const b = [];
   if (c.vol != null) b.push(`日次ボラティリティ${(c.vol * 100).toFixed(1)}%${c.vol > 0.03 ? "と高め" : ""}`);
+  if (c.atrRatio != null) b.push(`平均的な1日の値動き幅${(c.atrRatio * 100).toFixed(1)}%`);
   if (c.posInRange != null && c.posInRange > 0.9) b.push("52週高値圏で過熱感に注意");
-  if (c.sector === "半導体") b.push("半導体市況の反落リスク");
-  else if (c.sector === "金融") b.push("金利動向の影響");
-  else if (c.sector === "エネルギー") b.push("原油価格の変動");
+  const secText = c.sectorName || c.sector || "";
+  if (/半導体|Technology|Semiconductor/i.test(secText)) b.push("半導体・テック市況の反落リスク");
+  else if (/金融|Financial/i.test(secText)) b.push("金利動向の影響");
+  else if (/エネルギー|Energy/i.test(secText)) b.push("原油価格の変動");
   b.push("モメンタム失速時の反落");
   return b.join("、") + "。";
 }
-const deadlineFor = c => (c.earningsInDays != null && c.earningsInDays >= 5 && c.earningsInDays <= 45) ? plus(c.earningsInDays + 1) : plus(28);
 // ===== 2000銘柄ユニバース: Yahooスクリーナーで時価総額順に取得（失敗時は固定リストにフォールバック）=====
 async function screenerPage(region, offset) {
   const crumb = await ensureCrumb();
@@ -362,18 +390,44 @@ async function batchQuotes(entries) {
   }
   return out;
 }
-// バッチ経路が使えない場合の保険: 実績あるチャート取得で固定リストから1銘柄選ぶ
+// ===== 制約付き採用: スコア順に ①決算±3日回避 ②同一セクター最大2 で4銘柄選ぶ =====
+const MAX_PER_SECTOR = 2, TOP_N = 4, POOL_N = 16;
+async function adoptWithConstraints(ranked) {
+  const pool = ranked.slice(0, POOL_N);
+  // 上位候補だけ追加情報（セクター・決算日・アナリスト目標）を取得
+  for (const c of pool) {
+    const ex = await enrichExtra(c.symbol);
+    Object.assign(c, ex);
+    await sleep(150);
+  }
+  const picks = [], secCount = {};
+  for (const c of pool) {
+    if (c.earningsInDays != null && c.earningsInDays >= -1 && c.earningsInDays <= 3) {
+      console.log("決算近接でスキップ:", c.name, `(${c.earningsInDays}日後)`); continue;
+    }
+    const sec = c.sectorName || c.sector || null;
+    if (sec) {
+      const n = secCount[sec] || 0;
+      if (n >= MAX_PER_SECTOR) { console.log("セクター上限でスキップ:", c.name, `(${sec})`); continue; }
+      secCount[sec] = n + 1;
+    }
+    picks.push(c);
+    if (picks.length >= TOP_N) break;
+  }
+  return picks;
+}
+// バッチ経路が使えない場合の保険: 実績あるチャート取得で固定リストから選ぶ
 async function selectPicksFallback() {
   const cands = [];
   for (const u of UNIVERSE) { const m = await chartMetrics(u.symbol); if (m) cands.push(Object.assign({}, u, m)); await sleep(120); }
   if (cands.length < 1) return [];
   let held = new Set();
   try { const pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8")); held = new Set((pf.open || []).map(p => p.symbol)); } catch (e) {}
-  const ranked = scoreAndSelect(cands, { maxPerSector: 9999, topN: cands.length });
-  const picks = ranked.filter(c => !held.has(c.symbol)).slice(0, 4);
+  const ranked = scoreAndSelect(cands, { maxPerSector: 9999, topN: cands.length }).filter(c => !held.has(c.symbol));
+  const picks = await adoptWithConstraints(ranked);
   if (!picks.length) return [];
   console.log("採用(フォールバック):", picks.map(p => p.name).join(", "));
-  return picks.map(t => ({ name: t.name, symbol: t.symbol, reason: buildReason(t), risk: buildRisk(t) }));
+  return picks.map(t => ({ name: t.name, symbol: t.symbol, sector: t.sectorName || t.sector || null, reason: buildReason(t), risk: buildRisk(t) }));
 }
 async function selectPicks() {
   const universe = await ensureUniverse();
@@ -400,12 +454,12 @@ async function selectPicks() {
   if (cands.length < 5) { console.log("バッチ選定が不十分→チャート経路にフォールバック"); return await selectPicksFallback(); }
   let held = new Set();
   try { const pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8")); held = new Set((pf.open || []).map(p => p.symbol)); } catch (e) {}
-  const ranked = scoreAndSelect(cands, { maxPerSector: 9999, topN: cands.length });
-  const picks = ranked.filter(c => !held.has(c.symbol)).slice(0, 4);
+  const ranked = scoreAndSelect(cands, { maxPerSector: 9999, topN: cands.length }).filter(c => !held.has(c.symbol));
+  const picks = await adoptWithConstraints(ranked);
   if (!picks.length) { console.log("採用なし（候補が全て保有中）"); return []; }
-  for (const t of picks) console.log("採用:", t.name, t.symbol, "score=" + t.score.toFixed(3));
-  console.log("候補", cands.length, "銘柄から", picks.length, "銘柄採用");
-  return picks.map(t => ({ name: t.name, symbol: t.symbol, reason: buildReason(t), risk: buildRisk(t) }));
+  for (const t of picks) console.log("採用:", t.name, t.symbol, "score=" + t.score.toFixed(3), "sector=" + (t.sectorName || "不明"));
+  console.log("候補", cands.length, "銘柄から", picks.length, "銘柄採用（セクター上限2・決算±3日回避）");
+  return picks.map(t => ({ name: t.name, symbol: t.symbol, sector: t.sectorName || null, reason: buildReason(t), risk: buildRisk(t) }));
 }
 try { out.picks = await selectPicks(); }
 catch (e) { console.log("picks選定に失敗:", e.message); out.picks = []; }
@@ -442,29 +496,30 @@ try {
     try { priceJPY[s] = await toJPY(await yQuote(s)); } catch (e) { console.log("価格取得失敗:", s, e.message); }
   }
 
-  // 保有銘柄のトレンド判定用に50日移動平均線割れをチェック（取得できた分だけ）
-  const belowMA50 = {};
+  // 保有銘柄の売却判定用データ（50日線・ATR）を取得
+  const met = {};
   for (const pos of pf.open) {
-    try { const m = await chartMetrics(pos.symbol); if (m) belowMA50[pos.symbol] = m.price < m.sma50; await sleep(120); } catch (e) {}
+    try { const m = await chartMetrics(pos.symbol); if (m) met[pos.symbol] = m; await sleep(120); } catch (e) {}
   }
 
-  // ===== 動的売却判定（固定期限なし・毎日の株価で判断）=====
-  // ①ピーク比 -12% のトレーリングストップ ②50日線割れ（トレンド転換）③最長1年で利確
-  const TRAIL = 0.12, MAX_HOLD = 365;
-  const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+  // ===== 動的売却判定(保有期限なし・毎日の株価で判断)=====
+  // ①ボラ連動トレーリングストップ: ピーク比 -(ATR14×3)。8〜25%にクランプ。ATR不明時は-12%
+  // ②50日線割れ（トレンド転換）
+  const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
   const still = [];
   for (const pos of pf.open) {
     const pj = priceJPY[pos.symbol];
     if (pj == null) { still.push(pos); continue; } // 価格が取れない日は保有継続
     pos.peakJPY = Math.max(pos.peakJPY || pos.buyPriceJPY, pj);
-    const heldDays = daysBetween(pos.buyDate, todayISO);
-    const trailingHit = pj <= pos.peakJPY * (1 - TRAIL);
-    const trendBreak = belowMA50[pos.symbol] === true;
-    const maxHold = heldDays >= MAX_HOLD;
-    if (trailingHit || trendBreak || maxHold) {
+    const m = met[pos.symbol];
+    const trailPct = (m && m.atrRatio) ? clamp(3 * m.atrRatio, 0.08, 0.25) : 0.12;
+    pos.trailPct = Math.round(trailPct * 1000) / 10; // 表示用(%)
+    const trailingHit = pj <= pos.peakJPY * (1 - trailPct);
+    const trendBreak = m ? m.price < m.sma50 : false;
+    if (trailingHit || trendBreak) {
       const v = pos.units * pj;
       pf.realizedJPY += v;
-      const why = trailingHit ? `トレーリングストップ(ピーク比-${Math.round(TRAIL * 100)}%)` : trendBreak ? "50日線割れ" : `最長保有${MAX_HOLD}日`;
+      const why = trailingHit ? `トレーリングストップ(ピーク比-${pos.trailPct}%)` : "50日線割れ";
       pf.closed.push({ ...pos, sellDate: todayISO, sellValueJPY: Math.round(v * 10) / 10, sellReason: why });
       console.log("売却:", pos.name, why, pos.costJPY + "円 →", v.toFixed(1) + "円");
     } else {
@@ -473,19 +528,39 @@ try {
   }
   pf.open = still;
 
-  // ===== 当日の仮想購入（1銘柄・100円・1日1回のみ）=====
+  // ===== 当日の仮想購入(4銘柄・各1000円・1日1回のみ)=====
   if (pf.lastBuyDate !== todayISO) {
     for (const p of out.picks) {
       const pj = priceJPY[p.symbol];
       if (pj == null) continue;
       pf.open.push({
-        symbol: p.symbol, name: p.name, buyDate: todayISO,
+        symbol: p.symbol, name: p.name, sector: p.sector || null, buyDate: todayISO,
         units: 1000 / pj, buyPriceJPY: Math.round(pj * 100) / 100, peakJPY: pj, costJPY: 1000
       });
       pf.investedJPY += 1000;
     }
     pf.lastBuyDate = todayISO;
   }
+
+  // ===== 対照実験: オルカン相当(TSE:2559 MAXIS全世界株式・円建て)を毎日4000円仮想積立 =====
+  if (!pf.benchmark) {
+    pf.benchmark = { symbol: "TSE:2559", name: "オルカン（MAXIS全世界株式 2559）",
+      investedJPY: 0, units: 0, lastBuyDate: null, startDate: todayISO };
+  }
+  try {
+    const bq = await yQuote(pf.benchmark.symbol); // 円建てETF
+    const bp = bq.price;
+    if (bp) {
+      if (pf.benchmark.lastBuyDate !== todayISO) {
+        pf.benchmark.units += 4000 / bp;
+        pf.benchmark.investedJPY += 4000;
+        pf.benchmark.lastBuyDate = todayISO;
+      }
+      pf.benchmark.lastPriceJPY = bp;
+      pf.benchmark.valuationJPY = Math.round(pf.benchmark.units * bp * 10) / 10;
+      console.log(`ベンチマーク更新: オルカン積立 投資${pf.benchmark.investedJPY}円 / 評価${pf.benchmark.valuationJPY}円`);
+    }
+  } catch (e) { console.log("ベンチマーク更新失敗:", e.message); }
 
   // 評価額 = 実現分 + 保有分の現在価値
   let openValue = 0;
@@ -497,6 +572,19 @@ try {
   pf.valuationJPY = Math.round((pf.realizedJPY + openValue) * 10) / 10;
   pf.realizedJPY = Math.round(pf.realizedJPY * 10) / 10;
   pf.updated = todayISO;
+
+  // 日次履歴（戦略とベンチマークの推移。あとでグラフ化できるように保存）
+  if (!Array.isArray(pf.history)) pf.history = [];
+  const hEntry = {
+    date: todayISO, inv: pf.investedJPY, val: pf.valuationJPY,
+    bInv: pf.benchmark.investedJPY || 0, bVal: pf.benchmark.valuationJPY || 0
+  };
+  if (pf.history.length && pf.history[pf.history.length - 1].date === todayISO) {
+    pf.history[pf.history.length - 1] = hEntry;
+  } else {
+    pf.history.push(hEntry);
+  }
+
   fs.writeFileSync(PF_FILE, JSON.stringify(pf, null, 2));
   console.log(`ポートフォリオ更新: 投資${pf.investedJPY}円 / 評価${pf.valuationJPY}円 / 保有${pf.open.length}件`);
 } catch (e) {
