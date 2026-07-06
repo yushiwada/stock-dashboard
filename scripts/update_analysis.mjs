@@ -120,7 +120,50 @@ const deepClean = o => {
 };
 deepClean(out);
 if (!Array.isArray(out.picks)) out.picks = [];
-out.picks = out.picks.filter(p => p && p.name && /^[A-Z_]+:[A-Z0-9.]+$/.test(p.symbol || "")).slice(0, 4);
+out.picks = (out.picks || []).filter(p => p && p.name);
+// 銘柄名からティッカーをYahoo検索で確定・検証（Haikuのsymbolはコード取り違えが多いため信用しない）
+function yExch2App(sym, exch) {
+  if (/\.T$/.test(sym)) return "TSE:" + sym.replace(/\.T$/, "");
+  const e = (exch || "").toUpperCase();
+  if (["NMS", "NGM", "NCM"].includes(e)) return "NASDAQ:" + sym;
+  if (e === "NYQ") return "NYSE:" + sym;
+  if (["PCX", "ASE"].includes(e)) return "AMEX:" + sym;
+  if (["JPX", "TYO"].includes(e)) return "TSE:" + sym.replace(/\.T$/, "");
+  return null;
+}
+async function resolveSymbol(name) {
+  const clean = (name || "").replace(/[（(][^）)]*[）)]/g, "").trim();
+  for (const q of [clean, name]) {
+    if (!q) continue;
+    try {
+      const r = await fetch("https://query1.finance.yahoo.com/v1/finance/search?q=" + encodeURIComponent(q) + "&quotesCount=6&newsCount=0",
+        { headers: { "User-Agent": "Mozilla/5.0" } });
+      if (!r.ok) continue;
+      const j = await r.json();
+      for (const it of (j.quotes || [])) {
+        if (it.quoteType !== "EQUITY" && it.quoteType !== "ETF") continue;
+        const s = yExch2App(it.symbol || "", it.exchange);
+        if (s && /^[A-Z0-9_]+:[A-Z0-9.]+$/.test(s)) return s;
+      }
+    } catch (e) {}
+  }
+  return null;
+}
+const verifiedPicks = [];
+for (const p of out.picks) {
+  const resolved = await resolveSymbol(p.name);
+  if (resolved) {
+    if (resolved !== p.symbol) console.log("ティッカー訂正:", p.name, p.symbol, "->", resolved);
+    p.symbol = resolved;
+    verifiedPicks.push(p);
+  } else if (/^(NASDAQ|NYSE|AMEX|OTC):[A-Z0-9.]+$/.test(p.symbol || "")) {
+    verifiedPicks.push(p); // 米国株で解決不能時はHaikuのsymbolを維持（東証はコード誤りが多いので除外）
+  } else {
+    console.log("解決不能のためpicks除外:", p.name, p.symbol);
+  }
+  await new Promise(r => setTimeout(r, 250));
+}
+out.picks = verifiedPicks.slice(0, 4);
 // deadline の補正（不正・近すぎ・遠すぎは28日後に）
 const plus = d => { const t = new Date(todayISO); t.setDate(t.getDate() + d); return t.toISOString().slice(0, 10); };
 for (const p of out.picks) {
