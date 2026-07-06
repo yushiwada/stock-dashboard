@@ -1,5 +1,5 @@
 {
-  "investedJPY": 400,
+  "investedJPY": 800,
   "realizedJPY": 0,
   "open": [
     {
@@ -10,7 +10,7 @@
       "units": 0.0017199582708196228,
       "buyPriceJPY": 58140.95,
       "costJPY": 100,
-      "curValueJPY": 100
+      "curValueJPY": 100.3
     },
     {
       "symbol": "NASDAQ:MU",
@@ -20,7 +20,7 @@
       "units": 0.0006354903426923337,
       "buyPriceJPY": 157358.8,
       "costJPY": 100,
-      "curValueJPY": 100
+      "curValueJPY": 100.3
     },
     {
       "symbol": "NASDAQ:MSFT",
@@ -30,7 +30,7 @@
       "units": 0.0015876436239517862,
       "buyPriceJPY": 62986.43,
       "costJPY": 100,
-      "curValueJPY": 100
+      "curValueJPY": 100.3
     },
     {
       "symbol": "TSE:8001",
@@ -40,11 +40,51 @@
       "units": 0.052952078369075985,
       "buyPriceJPY": 1888.5,
       "costJPY": 100,
+      "curValueJPY": 100.4
+    },
+    {
+      "symbol": "NASDAQ:AVGO",
+      "name": "Broadcom（ブロードコム）",
+      "buyDate": "2026-07-06",
+      "deadline": "2026-08-15",
+      "units": 0.0017153747498421831,
+      "buyPriceJPY": 58296.3,
+      "costJPY": 100,
+      "curValueJPY": 100
+    },
+    {
+      "symbol": "NASDAQ:MU",
+      "name": "Micron Technology（マイクロン）",
+      "buyDate": "2026-07-06",
+      "deadline": "2026-08-01",
+      "units": 0.0006337968229330999,
+      "buyPriceJPY": 157779.27,
+      "costJPY": 100,
+      "curValueJPY": 100
+    },
+    {
+      "symbol": "TSE:3402",
+      "name": "キオクシア（東芝メモリ）",
+      "buyDate": "2026-07-06",
+      "deadline": "2026-08-20",
+      "units": 0.0848536274925753,
+      "buyPriceJPY": 1178.5,
+      "costJPY": 100,
+      "curValueJPY": 100
+    },
+    {
+      "symbol": "NYSE:BAC",
+      "name": "コマーシャル・バンク（米国大手銀行）",
+      "buyDate": "2026-07-06",
+      "deadline": "2026-08-03",
+      "units": 0.010527955535171376,
+      "buyPriceJPY": 9498.52,
+      "costJPY": 100,
       "curValueJPY": 100
     }
   ],
   "closed": [],
-  "lastBuyDate": "2026-07-04",
-  "valuationJPY": 400,
-  "updated": "2026-07-04"
+  "lastBuyDate": "2026-07-06",
+  "valuationJPY": 801.3,
+  "updated": "2026-07-06"
 }
