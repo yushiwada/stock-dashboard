@@ -1,7 +1,7 @@
 // 毎朝の「展望と考察」自動更新スクリプト（GitHub Actionsで実行）
 // 1) Claude API（Haiku・ウェブ検索付き）で最新情報を調べ、index.html の ANALYSIS ブロックを書き換える
 //    ※銘柄選定はLLMを使わず数値ベース（毎日Haikuの解説文コストのみで運用できる設計）
-// 2) 複合スコア上位4銘柄を毎日1000円ずつ仮想購入（セクター上限2・決算±3日回避）、
+// 2) 複合スコア上位4銘柄を毎日1000円ずつ仮想購入（セクター上限2・決算±3日回避・保有中も買い増しあり）、
 //    売却はATR連動トレーリングストップ（ATR14×3、8〜25%）と50日線割れのみ（保有期限なし）
 // 3) 対照実験: オルカン相当（TSE:2559 MAXIS全世界株式）を毎日4000円仮想積立して比較
 import fs from "node:fs";
@@ -421,9 +421,8 @@ async function selectPicksFallback() {
   const cands = [];
   for (const u of UNIVERSE) { const m = await chartMetrics(u.symbol); if (m) cands.push(Object.assign({}, u, m)); await sleep(120); }
   if (cands.length < 1) return [];
-  let held = new Set();
-  try { const pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8")); held = new Set((pf.open || []).map(p => p.symbol)); } catch (e) {}
-  const ranked = scoreAndSelect(cands, { maxPerSector: 9999, topN: cands.length }).filter(c => !held.has(c.symbol));
+  // 保有中の銘柄も除外しない（スコア上位なら買い増しする）
+  const ranked = scoreAndSelect(cands, { maxPerSector: 9999, topN: cands.length });
   const picks = await adoptWithConstraints(ranked);
   if (!picks.length) return [];
   console.log("採用(フォールバック):", picks.map(p => p.name).join(", "));
@@ -452,11 +451,10 @@ async function selectPicks() {
   }
   console.log("picks: フィルタ後候補", cands.length);
   if (cands.length < 5) { console.log("バッチ選定が不十分→チャート経路にフォールバック"); return await selectPicksFallback(); }
-  let held = new Set();
-  try { const pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8")); held = new Set((pf.open || []).map(p => p.symbol)); } catch (e) {}
-  const ranked = scoreAndSelect(cands, { maxPerSector: 9999, topN: cands.length }).filter(c => !held.has(c.symbol));
+  // 保有中の銘柄も除外しない（スコア上位なら買い増しする）
+  const ranked = scoreAndSelect(cands, { maxPerSector: 9999, topN: cands.length });
   const picks = await adoptWithConstraints(ranked);
-  if (!picks.length) { console.log("採用なし（候補が全て保有中）"); return []; }
+  if (!picks.length) { console.log("採用なし"); return []; }
   for (const t of picks) console.log("採用:", t.name, t.symbol, "score=" + t.score.toFixed(3), "sector=" + (t.sectorName || "不明"));
   console.log("候補", cands.length, "銘柄から", picks.length, "銘柄採用（セクター上限2・決算±3日回避）");
   return picks.map(t => ({ name: t.name, symbol: t.symbol, sector: t.sectorName || null, reason: buildReason(t), risk: buildRisk(t) }));
