@@ -302,9 +302,14 @@ async function selectPicks() {
   const shortlist = prelim.slice(0, Math.min(14, prelim.length));
   // Phase2: 上位のみアナリスト/決算を付与
   for (const c of shortlist) { Object.assign(c, await analystExtra(c.symbol)); await sleep(120); }
-  const finalPicks = scoreAndSelect(shortlist, { maxPerSector: 2, topN: 4 });
-  for (const p of finalPicks) console.log("採用:", p.name, p.symbol, "score=" + p.score.toFixed(3));
-  return finalPicks.map(c => ({ name: c.name, symbol: c.symbol, reason: buildReason(c), risk: buildRisk(c), deadline: deadlineFor(c) }));
+  // 保有中の銘柄は除外し、複合スコア最上位の1銘柄だけを選ぶ（1日1ピック）
+  let held = new Set();
+  try { const pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8")); held = new Set((pf.open || []).map(p => p.symbol)); } catch (e) {}
+  const ranked = scoreAndSelect(shortlist, { maxPerSector: 99, topN: shortlist.length });
+  const top = ranked.find(c => !held.has(c.symbol));
+  if (!top) { console.log("採用なし（候補が全て保有中）"); return []; }
+  console.log("採用:", top.name, top.symbol, "score=" + top.score.toFixed(3));
+  return [{ name: top.name, symbol: top.symbol, reason: buildReason(top), risk: buildRisk(top) }];
 }
 try { out.picks = await selectPicks(); }
 catch (e) { console.log("picks選定に失敗:", e.message); out.picks = []; }
@@ -341,28 +346,45 @@ try {
     try { priceJPY[s] = await toJPY(await yQuote(s)); } catch (e) { console.log("価格取得失敗:", s, e.message); }
   }
 
-  // 期限到来分を売却
+  // 保有銘柄のトレンド判定用に50日移動平均線割れをチェック（取得できた分だけ）
+  const belowMA50 = {};
+  for (const pos of pf.open) {
+    try { const m = await chartMetrics(pos.symbol); if (m) belowMA50[pos.symbol] = m.price < m.sma50; await sleep(120); } catch (e) {}
+  }
+
+  // ===== 動的売却判定（固定期限なし・毎日の株価で判断）=====
+  // ①ピーク比 -12% のトレーリングストップ ②50日線割れ（トレンド転換）③最長90日で利確
+  const TRAIL = 0.12, MAX_HOLD = 90;
+  const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
   const still = [];
   for (const pos of pf.open) {
-    if (pos.deadline <= todayISO && priceJPY[pos.symbol] != null) {
-      const v = pos.units * priceJPY[pos.symbol];
+    const pj = priceJPY[pos.symbol];
+    if (pj == null) { still.push(pos); continue; } // 価格が取れない日は保有継続
+    pos.peakJPY = Math.max(pos.peakJPY || pos.buyPriceJPY, pj);
+    const heldDays = daysBetween(pos.buyDate, todayISO);
+    const trailingHit = pj <= pos.peakJPY * (1 - TRAIL);
+    const trendBreak = belowMA50[pos.symbol] === true;
+    const maxHold = heldDays >= MAX_HOLD;
+    if (trailingHit || trendBreak || maxHold) {
+      const v = pos.units * pj;
       pf.realizedJPY += v;
-      pf.closed.push({ ...pos, sellDate: todayISO, sellValueJPY: Math.round(v * 10) / 10 });
-      console.log("売却:", pos.name, pos.costJPY + "円 →", v.toFixed(1) + "円");
+      const why = trailingHit ? `トレーリングストップ(ピーク比-${Math.round(TRAIL * 100)}%)` : trendBreak ? "50日線割れ" : `最長保有${MAX_HOLD}日`;
+      pf.closed.push({ ...pos, sellDate: todayISO, sellValueJPY: Math.round(v * 10) / 10, sellReason: why });
+      console.log("売却:", pos.name, why, pos.costJPY + "円 →", v.toFixed(1) + "円");
     } else {
       still.push(pos);
     }
   }
   pf.open = still;
 
-  // 当日の仮想購入（各100円・1日1回のみ）
+  // ===== 当日の仮想購入（1銘柄・100円・1日1回のみ）=====
   if (pf.lastBuyDate !== todayISO) {
     for (const p of out.picks) {
       const pj = priceJPY[p.symbol];
       if (pj == null) continue;
       pf.open.push({
-        symbol: p.symbol, name: p.name, buyDate: todayISO, deadline: p.deadline,
-        units: 100 / pj, buyPriceJPY: Math.round(pj * 100) / 100, costJPY: 100
+        symbol: p.symbol, name: p.name, buyDate: todayISO,
+        units: 100 / pj, buyPriceJPY: Math.round(pj * 100) / 100, peakJPY: pj, costJPY: 100
       });
       pf.investedJPY += 100;
     }
