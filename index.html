@@ -190,7 +190,7 @@
   }
   .overview h2 { font-size: 15px; color: var(--text); margin-bottom: 6px; }
   .overview b { color: var(--text); }
-  .pf-table { width: 100%; max-width: 700px; border-collapse: collapse; margin-top: 4px; font-size: 12px; }
+  .pf-table { width: 100%; max-width: 900px; border-collapse: collapse; margin-top: 4px; font-size: 12px; }
   .pf-table th, .pf-table td { padding: 4px 8px; border-bottom: 1px solid var(--border); text-align: left; }
   .pf-table th { color: var(--text); }
   .section-title {
@@ -845,15 +845,15 @@ function render() {
     const ph = document.createElement("div");
     ph.className = "overview";
     ph.innerHTML = `<h2>🔎 注目の個別株 <span class="badge">${ANALYSIS.asof}時点・毎朝自動更新</span></h2>
-      アナリスト評価や直近のニュースを基に毎朝選定した注目銘柄です。<b>投資推奨ではありません</b>──根拠とリスクを読んで、判断はご自身で。
-      下のシミュレーションでは毎日これらの注目銘柄を仮想購入し、株価に応じて動的に売却します。`;
+      2000銘柄超（日米・時価総額上位）から複合スコアで毎朝選定した注目銘柄です。<b>投資推奨ではありません</b>──根拠とリスクを読んで、判断はご自身で。
+      下のシミュレーションでは毎日これらの注目銘柄を仮想購入し、株価に応じて動的に売却します（同一セクター最大2銘柄・決算発表±3日は回避）。`;
     grid.appendChild(ph);
     ANALYSIS.picks.forEach(p => {
       const card = document.createElement("div");
       card.className = "card stockpick";
       const head = document.createElement("div");
       head.className = "head";
-      head.innerHTML = `<div class="title">${p.name} <small>${p.symbol}${/^TSE:/.test(p.symbol) ? "（東証・円建て）" : ""}</small></div>`;
+      head.innerHTML = `<div class="title">${p.name} <small>${p.symbol}${/^TSE:/.test(p.symbol) ? "（東証・円建て）" : ""}${p.sector ? " ｜ " + p.sector : ""}</small></div>`;
       card.appendChild(head);
       const l = document.createElement("div");
       l.className = "lesson";
@@ -868,7 +868,7 @@ function render() {
   // 仮想積立シミュレーション（毎朝の自動処理が portfolio.json を更新）
   const pfCard = document.createElement("div");
   pfCard.className = "overview";
-  pfCard.innerHTML = `<h2>💰 ピック積立シミュレーション（仮想）</h2><div id="pfBody">読込中…</div>`;
+  pfCard.innerHTML = `<h2>💰 ピック積立シミュレーション（仮想） vs オルカン積立</h2><div id="pfBody">読込中…</div>`;
   grid.appendChild(pfCard);
   fillPortfolio();
 
@@ -884,21 +884,38 @@ async function fillPortfolio() {
     const pct = pf.investedJPY ? (pl / pf.investedJPY * 100) : 0;
     const col = pl >= 0 ? "var(--up)" : "var(--down)";
     const fmt = n => Math.round(n).toLocaleString("ja-JP");
-    let hd = `毎朝、複合スコアで選定した注目<b>4銘柄を各1000円ずつ（1日計4000円）仮想購入</b>し、株価を見て動的に売却（ピーク比-12%のトレーリングストップ・50日線割れ・最長1年）した場合の成績（実際の売買はしていません）。<br>
-      <span style="font-size:16px">累計投資額 <b style="color:var(--text)">${fmt(pf.investedJPY)}円</b> ／
+    let hd = `毎朝、複合スコアで選定した注目<b>4銘柄を各1000円ずつ（1日計4000円）仮想購入</b>。
+      売却は<b>ボラティリティ連動のトレーリングストップ</b>（その銘柄の平均日次変動幅ATR14×3倍、8〜25%の範囲）と<b>50日線割れ</b>のみで、保有期限はありません。
+      買い付け時は同一セクター最大2銘柄・決算発表±3日の銘柄は回避（実際の売買はしていません）。<br>
+      <span style="font-size:16px">📈 ピック戦略: 累計投資額 <b style="color:var(--text)">${fmt(pf.investedJPY)}円</b> ／
       評価額 <b style="color:var(--text)">${fmt(pf.valuationJPY)}円</b> ／
       損益 <b style="color:${col}">${pl >= 0 ? "+" : ""}${fmt(pl)}円（${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%）</b></span>
       <span style="font-size:11px">（評価額＝売却済みの受取額＋保有中の現在価値。${pf.updated} 時点）</span>`;
+    if (pf.benchmark && pf.benchmark.investedJPY) {
+      const b = pf.benchmark;
+      const bval = b.valuationJPY || 0;
+      const bpl = bval - b.investedJPY;
+      const bpct = b.investedJPY ? (bpl / b.investedJPY * 100) : 0;
+      const bcol = bpl >= 0 ? "var(--up)" : "var(--down)";
+      const diff = pct - bpct;
+      const dcol = diff >= 0 ? "var(--up)" : "var(--down)";
+      hd += `<br><span style="font-size:16px">🌏 対照実験（オルカン2559を毎日4000円積立）: 累計投資額 <b style="color:var(--text)">${fmt(b.investedJPY)}円</b> ／
+        評価額 <b style="color:var(--text)">${fmt(bval)}円</b> ／
+        損益 <b style="color:${bcol}">${bpl >= 0 ? "+" : ""}${fmt(bpl)}円（${bpct >= 0 ? "+" : ""}${bpct.toFixed(1)}%）</b></span><br>
+        <b>ピック戦略 − オルカン = <span style="color:${dcol}">${diff >= 0 ? "+" : ""}${diff.toFixed(1)}ポイント</span></b>
+        <span style="font-size:11px">（${b.startDate || ""}開始。同じ日に同じ合計額を積み立てた場合の損益率で比較）</span>`;
+    }
     if (pf.open && pf.open.length) {
-      hd += `<br><br><b style="color:var(--text)">保有中 ${pf.open.length}件:</b><table class="pf-table"><tr><th>銘柄</th><th>購入日</th><th>投資</th><th>現在価値</th></tr>` +
+      hd += `<br><br><b style="color:var(--text)">保有中 ${pf.open.length}件:</b><table class="pf-table"><tr><th>銘柄</th><th>セクター</th><th>購入日</th><th>投資</th><th>現在価値</th><th>売却ライン</th></tr>` +
         pf.open.map(p => {
           const cv = p.curValueJPY != null ? p.curValueJPY : p.costJPY;
           const c = cv >= p.costJPY ? "var(--up)" : "var(--down)";
-          return `<tr><td>${p.name}</td><td>${p.buyDate}</td><td>${p.costJPY}円</td><td style="color:${c}">${cv.toFixed(1)}円</td></tr>`;
+          const stop = p.trailPct != null ? `ピーク比-${p.trailPct}%` : "—";
+          return `<tr><td>${p.name}</td><td>${p.sector || "—"}</td><td>${p.buyDate}</td><td>${p.costJPY}円</td><td style="color:${c}">${cv.toFixed(1)}円</td><td>${stop}</td></tr>`;
         }).join("") + `</table>`;
     }
     if (pf.closed && pf.closed.length) {
-      const inv = pf.closed.length * 100;
+      const inv = pf.closed.reduce((s, p) => s + (p.costJPY || 0), 0);
       const got = pf.closed.reduce((s, p) => s + p.sellValueJPY, 0);
       hd += `<br><b style="color:var(--text)">売却済み ${pf.closed.length}件:</b> 投資${fmt(inv)}円 → 受取${fmt(got)}円`;
     }
