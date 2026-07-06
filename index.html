@@ -850,7 +850,7 @@ function render() {
     ph.className = "overview";
     ph.innerHTML = `<h2>🔎 注目の個別株 <span class="badge">${ANALYSIS.asof}時点・毎朝自動更新</span></h2>
       アナリスト評価や直近のニュースを基に毎朝選定した注目銘柄です。<b>投資推奨ではありません</b>──根拠とリスクを読んで、判断はご自身で。
-      下のシミュレーションでは毎日この注目銘柄を仮想購入し、株価に応じて動的に売却します。`;
+      下のシミュレーションでは毎日これらの注目銘柄を仮想購入し、株価に応じて動的に売却します。`;
     grid.appendChild(ph);
     ANALYSIS.picks.forEach(p => {
       const card = document.createElement("div");
@@ -888,7 +888,7 @@ async function fillPortfolio() {
     const pct = pf.investedJPY ? (pl / pf.investedJPY * 100) : 0;
     const col = pl >= 0 ? "var(--up)" : "var(--down)";
     const fmt = n => Math.round(n).toLocaleString("ja-JP");
-    let hd = `毎朝、複合スコアで選定した注目<b>1銘柄を100円ずつ仮想購入</b>し、株価を見て動的に売却（ピーク比-12%のトレーリングストップ・50日線割れ・最長90日）した場合の成績（実際の売買はしていません）。<br>
+    let hd = `毎朝、複合スコアで選定した注目<b>4銘柄を各1000円ずつ（1日計4000円）仮想購入</b>し、株価を見て動的に売却（ピーク比-12%のトレーリングストップ・50日線割れ・最長1年）した場合の成績（実際の売買はしていません）。<br>
       <span style="font-size:16px">累計投資額 <b style="color:var(--text)">${fmt(pf.investedJPY)}円</b> ／
       評価額 <b style="color:var(--text)">${fmt(pf.valuationJPY)}円</b> ／
       損益 <b style="color:${col}">${pl >= 0 ? "+" : ""}${fmt(pl)}円（${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%）</b></span>
