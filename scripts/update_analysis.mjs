@@ -370,10 +370,10 @@ async function selectPicksFallback() {
   let held = new Set();
   try { const pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8")); held = new Set((pf.open || []).map(p => p.symbol)); } catch (e) {}
   const ranked = scoreAndSelect(cands, { maxPerSector: 9999, topN: cands.length });
-  const top = ranked.find(c => !held.has(c.symbol));
-  if (!top) return [];
-  console.log("採用(フォールバック):", top.name, top.symbol);
-  return [{ name: top.name, symbol: top.symbol, reason: buildReason(top), risk: buildRisk(top) }];
+  const picks = ranked.filter(c => !held.has(c.symbol)).slice(0, 4);
+  if (!picks.length) return [];
+  console.log("採用(フォールバック):", picks.map(p => p.name).join(", "));
+  return picks.map(t => ({ name: t.name, symbol: t.symbol, reason: buildReason(t), risk: buildRisk(t) }));
 }
 async function selectPicks() {
   const universe = await ensureUniverse();
@@ -401,10 +401,11 @@ async function selectPicks() {
   let held = new Set();
   try { const pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8")); held = new Set((pf.open || []).map(p => p.symbol)); } catch (e) {}
   const ranked = scoreAndSelect(cands, { maxPerSector: 9999, topN: cands.length });
-  const top = ranked.find(c => !held.has(c.symbol));
-  if (!top) { console.log("採用なし（候補が全て保有中）"); return []; }
-  console.log("採用:", top.name, top.symbol, "score=" + top.score.toFixed(3), "候補", cands.length, "銘柄から");
-  return [{ name: top.name, symbol: top.symbol, reason: buildReason(top), risk: buildRisk(top) }];
+  const picks = ranked.filter(c => !held.has(c.symbol)).slice(0, 4);
+  if (!picks.length) { console.log("採用なし（候補が全て保有中）"); return []; }
+  for (const t of picks) console.log("採用:", t.name, t.symbol, "score=" + t.score.toFixed(3));
+  console.log("候補", cands.length, "銘柄から", picks.length, "銘柄採用");
+  return picks.map(t => ({ name: t.name, symbol: t.symbol, reason: buildReason(t), risk: buildRisk(t) }));
 }
 try { out.picks = await selectPicks(); }
 catch (e) { console.log("picks選定に失敗:", e.message); out.picks = []; }
@@ -448,8 +449,8 @@ try {
   }
 
   // ===== 動的売却判定（固定期限なし・毎日の株価で判断）=====
-  // ①ピーク比 -12% のトレーリングストップ ②50日線割れ（トレンド転換）③最長90日で利確
-  const TRAIL = 0.12, MAX_HOLD = 90;
+  // ①ピーク比 -12% のトレーリングストップ ②50日線割れ（トレンド転換）③最長1年で利確
+  const TRAIL = 0.12, MAX_HOLD = 365;
   const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
   const still = [];
   for (const pos of pf.open) {
@@ -479,9 +480,9 @@ try {
       if (pj == null) continue;
       pf.open.push({
         symbol: p.symbol, name: p.name, buyDate: todayISO,
-        units: 100 / pj, buyPriceJPY: Math.round(pj * 100) / 100, peakJPY: pj, costJPY: 100
+        units: 1000 / pj, buyPriceJPY: Math.round(pj * 100) / 100, peakJPY: pj, costJPY: 1000
       });
-      pf.investedJPY += 100;
+      pf.investedJPY += 1000;
     }
     pf.lastBuyDate = todayISO;
   }
