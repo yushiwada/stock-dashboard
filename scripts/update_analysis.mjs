@@ -3,7 +3,8 @@
 //    ※銘柄選定はLLMを使わず数値ベース（毎日Haikuの解説文コストのみで運用できる設計）
 // 2) 複合スコア上位4銘柄を毎日1000円ずつ仮想購入（セクター上限2・決算±3日回避・保有中も買い増しあり）、
 //    売却はATR連動トレーリングストップ（ATR14×3、8〜25%）と50日線割れのみ（保有期限なし）
-// 3) 対照実験: オルカン相当（TSE:2559 MAXIS全世界株式）を毎日4000円仮想積立して比較
+// 3) 対照実験: オルカン（eMAXIS Slim 全世界株式・投信協会CSVの基準価額）を毎日4000円仮想積立して比較
+// 4) ユニバースは日米の株式（時価総額上位）＋ETF（出来高上位）＋主要投資信託
 import fs from "node:fs";
 
 const API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -174,7 +175,56 @@ const UNIVERSE = [
   { name: "半導体ETF(SMH)", symbol: "NASDAQ:SMH", sector: "ETF" }
 ];
 const toYahoo = sym => sym.startsWith("TSE:") ? sym.slice(4) + ".T" : sym.split(":")[1];
+// ===== 投資信託: 投信協会の公式CSV（日次基準価額・全履歴）から取得 =====
+const FUNDS = [
+  { symbol: "FUND:0331418A", name: "オルカン（eMAXIS Slim 全世界株式）", isin: "JP90C000H1T1", assoc: "0331418A", sector: "投信" },
+  { symbol: "FUND:03311187", name: "eMAXIS Slim 米国株式（S&P500）", isin: "JP90C000GKC6", assoc: "03311187", sector: "投信" }
+];
+const _fundHist = {};
+async function fundHistory(sym) {
+  if (_fundHist[sym]) return _fundHist[sym];
+  const f = FUNDS.find(x => x.symbol === sym);
+  if (!f) return null;
+  try {
+    const url = `https://toushin-lib.fwg.ne.jp/FdsWeb/FDST030000/csv-file-download?isinCd=${f.isin}&associFundCd=${f.assoc}`;
+    const r = await fetch(url, { headers: { "User-Agent": UA } });
+    if (!r.ok) return null;
+    const buf = await r.arrayBuffer();
+    let text;
+    try { text = new TextDecoder("shift_jis").decode(buf); } catch (e) { text = new TextDecoder().decode(buf); }
+    const rows = [];
+    for (const line of text.split(/\r?\n/)) {
+      const m = line.match(/^(\d{4})年(\d{2})月(\d{2})日,(\d+)/);
+      if (m) rows.push({ date: `${m[1]}-${m[2]}-${m[3]}`, nav: Number(m[4]) });
+    }
+    if (rows.length < 60) return null;
+    _fundHist[sym] = rows;
+    return rows;
+  } catch (e) { return null; }
+}
+function fundMetrics(rows) {
+  const closes = rows.map(r => r.nav);
+  const price = closes[closes.length - 1];
+  const at = n => closes[Math.max(0, closes.length - 1 - n)];
+  const ret = n => { const p0 = at(n); return p0 ? price / p0 - 1 : null; };
+  const sma = n => { const s = closes.slice(-n); return s.reduce((a, b) => a + b, 0) / s.length; };
+  const win = closes.slice(-252);
+  const hi = Math.max(...win), lo = Math.min(...win);
+  const rec = closes.slice(-61);
+  const rr = []; for (let i = 1; i < rec.length; i++) rr.push(rec[i] / rec[i - 1] - 1);
+  const mu = rr.reduce((a, b) => a + b, 0) / (rr.length || 1);
+  const vol = Math.sqrt(rr.reduce((a, b) => a + (b - mu) ** 2, 0) / (rr.length || 1));
+  // 高値・安値データがないため、日次騰落率の平均絶対値をATR相当として使う
+  const abs = rr.slice(-14).map(x => Math.abs(x));
+  const atrRatio = abs.length ? abs.reduce((a, b) => a + b, 0) / abs.length : null;
+  return { price, ret3m: ret(63), ret6m: ret(126), sma50: sma(50), sma200: sma(200),
+    posInRange: hi > lo ? (price - lo) / (hi - lo) : 0.5, vol, atrRatio };
+}
 async function chartMetrics(sym) {
+  if (sym.startsWith("FUND:")) {
+    const rows = await fundHistory(sym);
+    return rows ? fundMetrics(rows) : null;
+  }
   try {
     const y = toYahoo(sym);
     const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${y}?range=1y&interval=1d`, { headers: { "User-Agent": UA } });
@@ -232,6 +282,7 @@ async function ensureCrumb() {
   return _crumb;
 }
 async function enrichExtra(sym) {
+  if (sym.startsWith("FUND:")) return {}; // 投信はYahoo情報なし（セクターは「投信」固定）
   const crumb = await ensureCrumb();
   if (!crumb) return {};
   try {
@@ -319,7 +370,7 @@ function buildRisk(c) {
   return b.join("、") + "。";
 }
 // ===== 2000銘柄ユニバース: Yahooスクリーナーで時価総額順に取得（失敗時は固定リストにフォールバック）=====
-async function screenerPage(region, offset) {
+async function screenerPage(region, offset, quoteType = "EQUITY") {
   const crumb = await ensureCrumb();
   if (!crumb) return [];
   try {
@@ -327,7 +378,7 @@ async function screenerPage(region, offset) {
       method: "POST",
       headers: { "User-Agent": UA, "Cookie": _cookie, "content-type": "application/json" },
       body: JSON.stringify({
-        size: 250, offset, sortField: "intradaymarketcap", sortType: "DESC", quoteType: "EQUITY", topOperator: "AND",
+        size: 250, offset, sortField: quoteType === "ETF" ? "dayvolume" : "intradaymarketcap", sortType: "DESC", quoteType, topOperator: "AND",
         query: { operator: "AND", operands: [{ operator: "EQ", operands: ["region", region] }] },
         userId: "", userIdType: "guid"
       })
@@ -349,31 +400,34 @@ function toAppSym(q) {
 async function ensureUniverse() {
   try {
     const u = JSON.parse(fs.readFileSync("universe.json", "utf8"));
-    if (u && Array.isArray(u.list) && u.list.length > 500 && u.fetched && (Date.now() - new Date(u.fetched)) < 7 * 864e5) {
+    if (u && u.v === 2 && Array.isArray(u.list) && u.list.length > 500 && u.fetched && (Date.now() - new Date(u.fetched)) < 7 * 864e5) {
       console.log("universe: キャッシュ利用", u.list.length); return u.list;
     }
   } catch (e) {}
   const seen = new Set(), list = [];
-  for (const region of ["us", "jp"]) {
-    for (let off = 0; off < 1500; off += 250) {
-      const quotes = await screenerPage(region, off);
-      if (!quotes.length) break;
-      for (const q of quotes) {
-        const sym = toAppSym(q);
-        if (!sym || seen.has(sym)) continue;
-        seen.add(sym);
-        list.push({ name: q.shortName || q.longName || sym.split(":")[1], symbol: sym, ysym: q.symbol });
+  for (const qt of ["EQUITY", "ETF"]) {
+    const maxOff = qt === "ETF" ? 500 : 1500; // ETFは出来高上位500×2市場
+    for (const region of ["us", "jp"]) {
+      for (let off = 0; off < maxOff; off += 250) {
+        const quotes = await screenerPage(region, off, qt);
+        if (!quotes.length) break;
+        for (const q of quotes) {
+          const sym = toAppSym(q);
+          if (!sym || seen.has(sym)) continue;
+          seen.add(sym);
+          list.push({ name: q.shortName || q.longName || sym.split(":")[1], symbol: sym, ysym: q.symbol, etf: qt === "ETF" || undefined });
+        }
+        await sleep(200);
+        if (quotes.length < 250) break;
       }
-      await sleep(200);
-      if (quotes.length < 250) break;
     }
   }
   if (list.length < 500) {
     console.log("universe: スクリーナー不足→固定リストにフォールバック", list.length);
     return UNIVERSE.map(u => ({ name: u.name, symbol: u.symbol, ysym: toYahoo(u.symbol) }));
   }
-  try { fs.writeFileSync("universe.json", JSON.stringify({ fetched: new Date().toISOString(), list })); } catch (e) {}
-  console.log("universe: スクリーナー取得", list.length);
+  try { fs.writeFileSync("universe.json", JSON.stringify({ fetched: new Date().toISOString(), v: 2, list })); } catch (e) {}
+  console.log("universe: スクリーナー取得", list.length, `(ETF ${list.filter(x => x.etf).length}件を含む)`);
   return list;
 }
 // ===== バッチで価格・50/200日線・52週高安・時価総額・出来高を一括取得（1回200銘柄）=====
@@ -420,7 +474,7 @@ async function adoptWithConstraints(ranked) {
 // バッチ経路が使えない場合の保険: 実績あるチャート取得で固定リストから選ぶ
 async function selectPicksFallback() {
   const cands = [];
-  for (const u of UNIVERSE) { const m = await chartMetrics(u.symbol); if (m) cands.push(Object.assign({}, u, m)); await sleep(120); }
+  for (const u of UNIVERSE.concat(FUNDS)) { const m = await chartMetrics(u.symbol); if (m) cands.push(Object.assign({}, u, m)); await sleep(120); }
   if (cands.length < 1) return [];
   // 保有中の銘柄も除外しない（スコア上位なら買い増しする）
   const ranked = scoreAndSelect(cands, { maxPerSector: 9999, topN: cands.length });
@@ -440,17 +494,23 @@ async function selectPicks() {
     const price = d.regularMarketPrice, ma50 = d.fiftyDayAverage, ma200 = d.twoHundredDayAverage;
     const hi = d.fiftyTwoWeekHigh, lo = d.fiftyTwoWeekLow;
     if (!price || !ma50 || !ma200 || !hi || !lo || hi <= lo) continue;
-    const mc = d.marketCap || 0, vol = d.averageDailyVolume3Month || d.regularMarketVolume || 0;
+    const mc = d.marketCap || (u.etf ? (d.netAssets || 0) : 0), vol = d.averageDailyVolume3Month || d.regularMarketVolume || 0;
     const jpy = d.currency === "JPY";
-    if (mc < (jpy ? 2e11 : 2e9)) continue;          // 時価総額 約2000億円 / 20億ドル 以上
-    if (price * vol < (jpy ? 1e9 : 1e7)) continue;  // 1日売買代金 約10億円 / 1000万ドル 以上
+    if (!u.etf && mc < (jpy ? 2e11 : 2e9)) continue; // 株式: 時価総額 約2000億円 / 20億ドル 以上
+    if (price * vol < (jpy ? 1e9 : 1e7)) continue;   // 1日売買代金 約10億円 / 1000万ドル 以上
     cands.push({
-      name: u.name, symbol: u.symbol, price, sma50: ma50, sma200: ma200,
+      name: u.name, symbol: u.symbol, sector: u.etf ? "ETF" : null, price, sma50: ma50, sma200: ma200,
       posInRange: (price - lo) / (hi - lo), ret3m: price / ma50 - 1, ret6m: price / ma200 - 1, vol: null,
-      mcDisp: jpy ? `時価総額${Math.round(mc / 1e8)}億円` : `時価総額${(mc / 1e9).toFixed(0)}十億ドル`
+      mcDisp: u.etf ? "ETF" : (jpy ? `時価総額${Math.round(mc / 1e8)}億円` : `時価総額${(mc / 1e9).toFixed(0)}十億ドル`)
     });
   }
-  console.log("picks: フィルタ後候補", cands.length);
+  // 投資信託を候補に追加（基準価額の履歴から同じ指標を計算）
+  for (const f of FUNDS) {
+    const rows = await fundHistory(f.symbol);
+    if (!rows) continue;
+    cands.push({ name: f.name, symbol: f.symbol, sector: f.sector, ...fundMetrics(rows), vol: null, mcDisp: "投資信託" });
+  }
+  console.log("picks: フィルタ後候補", cands.length, `(投信${cands.filter(c => c.sector === "投信").length}件を含む)`);
   if (cands.length < 5) { console.log("バッチ選定が不十分→チャート経路にフォールバック"); return await selectPicksFallback(); }
   // 保有中の銘柄も除外しない（スコア上位なら買い増しする）
   const ranked = scoreAndSelect(cands, { maxPerSector: 9999, topN: cands.length });
@@ -466,6 +526,11 @@ if (!Array.isArray(out.picks)) out.picks = [];
 
 // ===== 株価取得（Actionsのサーバー環境からはYahooに直接アクセス可能） =====
 async function yQuote(symbol) {
+  if (symbol.startsWith("FUND:")) {
+    const rows = await fundHistory(symbol);
+    if (!rows) throw new Error("fund nav " + symbol);
+    return { price: rows[rows.length - 1].nav, currency: "JPY" };
+  }
   const code = symbol.startsWith("TSE:") ? symbol.slice(4) + ".T" : symbol.split(":")[1];
   const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${code}?range=5d&interval=1d`,
     { headers: { "User-Agent": "Mozilla/5.0" } });
@@ -541,23 +606,34 @@ try {
     pf.lastBuyDate = todayISO;
   }
 
-  // ===== 対照実験: オルカン相当(TSE:2559 MAXIS全世界株式・円建て)を毎日4000円仮想積立 =====
+  // ===== 対照実験: オルカン(eMAXIS Slim 全世界株式・基準価額)を毎日4000円仮想積立 =====
+  const BENCH = FUNDS[0]; // eMAXIS Slim 全世界株式（オール・カントリー）
   if (!pf.benchmark) {
-    pf.benchmark = { symbol: "TSE:2559", name: "オルカン（MAXIS全世界株式 2559）",
+    pf.benchmark = { symbol: BENCH.symbol, name: BENCH.name,
       investedJPY: 0, units: 0, lastBuyDate: null, startDate: todayISO };
   }
   try {
-    const bq = await yQuote(pf.benchmark.symbol); // 円建てETF
-    const bp = bq.price;
+    const rows = await fundHistory(BENCH.symbol);
+    const bp = rows ? rows[rows.length - 1].nav : null; // 基準価額（1万口あたり円）
     if (bp) {
+      // 旧ベンチマーク(2559 ETF代理)からの移行: 評価額を引き継いで口数換算
+      if (pf.benchmark.symbol === "TSE:2559") {
+        const carry = pf.benchmark.valuationJPY || pf.benchmark.investedJPY || 0;
+        console.log(`ベンチマーク移行: 2559 → eMAXIS Slim（評価額${carry}円を引き継ぎ）`);
+        pf.benchmark = { symbol: BENCH.symbol, name: BENCH.name, investedJPY: pf.benchmark.investedJPY,
+          units: carry / bp, lastBuyDate: pf.benchmark.lastBuyDate, startDate: pf.benchmark.startDate };
+      }
       if (pf.benchmark.lastBuyDate !== todayISO) {
         pf.benchmark.units += 4000 / bp;
         pf.benchmark.investedJPY += 4000;
         pf.benchmark.lastBuyDate = todayISO;
       }
       pf.benchmark.lastPriceJPY = bp;
+      pf.benchmark.navDate = rows[rows.length - 1].date;
       pf.benchmark.valuationJPY = Math.round(pf.benchmark.units * bp * 10) / 10;
-      console.log(`ベンチマーク更新: オルカン積立 投資${pf.benchmark.investedJPY}円 / 評価${pf.benchmark.valuationJPY}円`);
+      console.log(`ベンチマーク更新: オルカン積立 投資${pf.benchmark.investedJPY}円 / 評価${pf.benchmark.valuationJPY}円 (基準価額${bp}円 ${pf.benchmark.navDate})`);
+    } else {
+      console.log("ベンチマーク: 基準価額が取得できず本日はスキップ");
     }
   } catch (e) { console.log("ベンチマーク更新失敗:", e.message); }
 
