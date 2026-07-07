@@ -7,16 +7,16 @@
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
 <style>
   :root {
-    --bg: #0d1117;
-    --card: #161b22;
-    --border: #30363d;
-    --text: #e6edf3;
-    --sub: #8b949e;
-    --accent: #58a6ff;
-    --pick: #d29922;
-    --danger: #f85149;
-    --up: #3fb950;
-    --down: #f85149;
+    --bg: #121214;
+    --card: #1a1a1e;
+    --border: #2b2b31;
+    --text: #e7e5df;
+    --sub: #96938b;
+    --accent: #7da899;
+    --pick: #b08b3e;
+    --danger: #c96b6b;
+    --up: #5aa06c;
+    --down: #c96b6b;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -32,7 +32,7 @@
     gap: 16px;
     flex-wrap: wrap;
   }
-  header h1 { font-size: 22px; }
+  header h1 { font-size: 19px; font-weight: 600; letter-spacing: 0.06em; }
   header .date { color: var(--sub); font-size: 14px; }
   .toolbar { margin-left: auto; display: flex; gap: 8px; }
   .btn {
@@ -216,11 +216,9 @@
   .badge {
     display: inline-block;
     font-size: 11px;
-    color: var(--pick);
-    border: 1px solid var(--pick);
-    border-radius: 20px;
-    padding: 1px 8px;
-    margin-left: 6px;
+    font-weight: 400;
+    color: var(--sub);
+    margin-left: 8px;
     vertical-align: middle;
   }
   @media (max-width: 560px) {
@@ -244,7 +242,7 @@
 <body>
 
 <header>
-  <h1>📈 マイ株価ダッシュボード</h1>
+  <h1>マイ株価ダッシュボード</h1>
   <span class="date" id="today"></span>
   <div class="toolbar">
     <button class="btn" id="addBtn">＋ 銘柄を追加</button>
@@ -295,77 +293,71 @@
 
 <div class="grid" id="grid"></div>
 
-<h2 class="section-title">📰 マーケットニュース（自動更新）— 大きな値動きの理由はまずここをチェック</h2>
+<h2 class="section-title">マーケットニュース</h2>
 <div class="news">
   <div id="jpNews" class="jp-news"><div class="loading">ニュースを読み込み中…</div></div>
 </div>
 
 <footer>
-  ※ <b style="color:var(--text)">東証銘柄（TSE:xxxx）はYahoo Financeの株価データを自前チャートで表示</b>しています（円建て・約20分遅延の場合あり。無料の中継サーバー経由のため、まれに取得に失敗することがあります。その場合は少し待って再読み込みを）。株式分割による段差は自動調整。<br>
-  ※ 米国株・指数はTradingViewの埋め込みチャート（指数はCFD価格: S&P500=SPXUSD、日経平均=JP225等）。チャート内のボタンで時間幅を切替できます（1日 / 1ヶ月 / 3ヶ月 / 1年 / 5年 / 全期間）。<br>
-  ※ 銘柄の追加・削除・並べ替え（タイトルをドラッグ or ◀▶ボタン）はこのブラウザに保存されます。別の端末・ブラウザで開くと初期設定に戻ります。<br>
-  ※ 「展望と考察」メモは毎朝の定期タスクで自動更新されます。「今日の学び銘柄」は教育用の日替わりローテーションであり、投資推奨ではありません。投資判断はご自身で。
+  東証銘柄はYahoo Financeのデータを円建てで表示（約20分遅延の場合あり。取得に失敗したら少し待って再読み込み）。米国株・指数はTradingViewの埋め込みチャート（指数はCFD価格）。<br>
+  銘柄の追加・削除・並べ替えはこのブラウザに保存されます。「展望と考察」は毎朝の定期処理で更新。掲載内容は情報の記録が目的で、投資助言ではありません。
 </footer>
 
 <script>
 /* ===== ANALYSIS_START =====
    このブロックは毎朝の自動処理（GitHub Actions + Claude API）が書き換える。手動編集しない。 */
 const ANALYSIS = {
-  "asof": "2026/7/7",
-  "market": "<b>米国株:</b> 7月6日（月）、S&P 500は+0.72%（7,537.43ポイント）、Nasdaq Compositは+1.12%（26,121.16ポイント）と続伸。テック株が広く買われ、半導体セクターはAI過剰投資懸念の調整から反発局面に入った。FRBウォーシュ議長のインフレリスク低下コメントがハト派姿勢を示唆、リスク資産を支援。<br><b>日本株:</b> 7月7日（火）の日経平均は39,587.68円と3日ぶり反落（-0.56%）。トランプ関税政策への不透明感がリスク回避を誘発。東証プライムの値下がり銘柄が60%超を占める売り優勢展開。ただしTOPIXは続伸で、バリュー株への資金流入は継続。<br><b>見方のコツ:</b> 7月7日（火）のSpaceX NASDAQ100採用で約$4.3Bのパッシブ買いが入るが、指数ウェイト1.3%以下（フリーフロート基準）と低く需給変化は限定的。米国決算シーズン本格化・インサイダーロックアップ段階的解除・日本の政策不透明感が7月～8月の主要リスク。",
+  "asof": "2026/7/6",
+  "market": "<b>米国株:</b> 7月1日のNASDAQ100は-1.54%で29,809ポイント。AI過剰投資懸念で半導体株が売却されるも、FRBウォーシュ議長がインフレリスク低下を言及し利上げを急がない観測が広がる。政策金利は3.50～3.75%で据え置き、市場では年内の追加利下げ観測は限定的。本週8日の6月FOMC議事要旨で市場心理が試される。<br><b>日本株:</b> 7月6日の日経平均は69,737.69円と小幅反落。前営業日3日の反発（69,744.07円）から調整局面。セクターローテーション継続でAI・半導体から出遅れ銘柄への資金流入が進行。野村は2026年末63,000円、上振れで70,500円を想定。NT倍率16倍超が依然高水準で平均回帰への警戒必要。<br><b>見方のコツ:</b> 7月4日（金）の米国独立記念日で市場休場。月曜の日米株価同期動向とセクター間選別の激しさが焦点。4-6月期決算本格化と半導体・ハイパースケーラー投資伸び率鈍化懸念が二大テーマ。ドル円160円前後の高値圏推移に留意。",
   "items": {
     "TSE:2559": {
-      "outlook": "7月7日の日経平均反落（-0.56%）でオルカン連動売りが優勢。トランプ関税警戒でリスク資産への買いが一時的に停滞。TOPIXが続伸を維持する中、セクター別バリュー優位が継続すれば、円建て資産への実質利回り改善期待が戻るタイミングを探る局面。",
-      "note": "7月6日の大幅続伸から一転、7日は反落スタート。米国の政策不透明感（関税交渉期限・FOMC日程）がリスク回避姿勢を強める。決算シーズン入りで個別銘柄選別が強まる傾向、指数全体の回復タイミングは米国金利・決算リアクション次第。"
+      "outlook": "<b>展望:</b> 7月6日の日本株小幅反落でオルカン連動。先週3日の69,744円から再度マイナス要因に直面。ドル円と米国株の相対パフォーマンスが主要決定要因。米国株EPS成長が2026年に約23%見込まれる中で、セクター選別の激化により円建て指数は振動激しくなる可能性。",
+      "note": "<b>考察のポイント:</b> 7月6日（月）の小幅反落は先週3日の反発から調整局面へ転換の可能性。8日のFOMC議事要旨とセクターローテーションの加速が注視点。ドル円がホルムズ海峡正常化期待で一時162円台から後退したことが、米国株（特にエネルギー関連）の需給に影響。"
     },
     "FOREXCOM:SPXUSD": {
-      "outlook": "7月6日は+0.72%で7,537.43ポイント。テック株の買い戻し継続、半導体セクター（SOX）が反発局面に入った。決算シーズン入りを控えた強気ムード定着も、AI過剰投資への警戒は完全には払拭されず。次のターゲットは7,600ポイント水準。",
-      "note": "7月1日の-1.54%売却から反発継続。米雇用統計堅調とFRBウォーシュ議長のインフレリスク低下発言がハト派期待を高め、ポジション調整買いを誘発。メタ・アルファベットのAI投資関連コメントも逆張り買い対象として認識されるように変化。"
+      "outlook": "<b>展望:</b> 7月1日時点でAI過剰投資懸念が半導体株の売却を加速。クラウド3社（アマゾン・マイクロソフト・アルファベット）の2026年設備投資計画が前年比で倍増見込みの中、投資家が収益性を疑問視し始めた。野村が2026年末見通しを7,200ポイントに引き上げているも、利益確定売りが出やすい局面継続。",
+      "note": "<b>リスク要因:</b> 2026年EPS成長23%という高水準が織り込まれており、ハイテク大型銘柄の決算ミスやハイパースケーラー投資伸び率鈍化で上値が抑えられやすい。FOMCの金融政策シグナルがタカ派化した場合、バリュー株へのセクターローテーション加速の懸念。"
     },
     "FOREXCOM:NSXUSD": {
-      "outlook": "7月6日は+1.12%で26,121.16ポイント。SpaceX NASDAQ100採用による約$4.3Bのパッシブ買い需要が入るが、指数ウェイト1.3%程度と低く相場への実質影響は限定的と判断。半導体セクター（SOX）買い戻し機運がNASDAQ全体の底堅さを支える。",
-      "note": "7月1日の-1.54%大幅売却から反発局面継続。KLA・AMD・Marvellなど半導体主力銘柄がAI過剰投資懸念から戻り買われ、指数上昇をけん引。SpaceXのNASDAQ採用イベントは市場心理のプラス材料だが、CEO Muskのロックアップ期限（8月上旬から段階的解除）が構造的な下値圧力を形成。"
+      "outlook": "<b>展望:</b> 7月1日は-1.54%で29,809ポイント。KLA・AMD・MRVL等半導体セクターの利益確定売りが顕著。7月7日のSpaceX NASDAQ100採用前後の需給変化と、AI関連企業の4-6月期決算が直近焦点。半導体指数SOXの大幅下落から市場は選別を強化、モメンタム重視の短期資金が退出中。",
+      "note": "<b>考察のポイント:</b> 7月1日のAI過剰投資懸念は一時的なショックでなく、2026年下半期のハイパースケーラー設備投資伸び率鈍化への事前調整と判断。NASDAQ構成銘柄の入れ替え（SpaceX採用）は短期ノイズだが、8月上旬のSpaceX初決算とロックアップ段階解除が相場規定要因に。"
     },
     "FOREXCOM:JP225": {
-      "outlook": "7月7日は39,587.68円と3日ぶり反落（-0.56%）。トランプ関税政策への不透明感がリスク回避を誘発、朝方の一時的な上昇は大きく反落。6月22日高値72,831円からの戻り局面で調整が入った形。バリュー株への資金シフトは継続するも、日本の政策環境不透明性が上値を重くしている。",
-      "note": "7月6日（日本時間では7日未明）の米国株続伸をいったん受けて寄り付いたが、トランプ大統領による貿易相手国への関税率通知書簡送付予定報道がリスク回避姿勢を加速。値下がり銘柄が6割超となり、売買代金も3兆4,000億円台の低水準で様子見ムード鮮明。"
+      "outlook": "<b>展望:</b> 7月6日は69,737.69円と小幅反落も、6週移動平均線（68,215円）のサポートが依然機能。NT倍率16倍超が過去最高水準で下値圧力増すも、TOPIX追い上げ期待から日本株全体の支えは堅い。4-6月期決算発表後の市場再構築で、セクターローテーション加速が続く。",
+      "note": "<b>考察のポイント:</b> 7月3日の反発から6日の小幅反落で調整局面へ。7月2日は-2.47%の売却も、翌営業日の反発で押し目買いの底堅さを確認。金融・保険・資本財が買われる一方、半導体・AI関連が売却される典型的なセクターローテーション。TOPIX+1.24%という乖離が緩やかに収束へ向かう展開を想定。"
     },
     "TSE:7974": {
-      "outlook": "7月6日は7,033円と-1.39%。6月29日の投資単位引下げ発表後の反発は一服し、調整局面が継続。2026年3月期の好決算（売上2兆3,130円・営業利益3,601億円）も、次期見通しの慎重さ（売上-11.3%見通し）が材料化しにくい。Nintendo Switch 2の立ち上げ安定性と新作ソフト投入タイミングが相場規定要因。",
-      "note": "6月26日の6,589円から7月2日の7,137円へ反発、6日は再び調整入り。投資単位引下げは個人投資家参加環境整備で中期ポジティブだが、短期的には材料出尽くし感が強い。5月決算での営業利益率低下（24.3%→15.6%）とメモリ高騰による約1,000億円コスト増の重圧が解消されていない。"
+      "outlook": "<b>展望:</b> 6月29日に投資単位の引下げを発表しち個人投資家参加環境整備。2026年3月期売上2兆3,130億円（+98.6%）とSwitch 2販売1,986万台牽引も、2027年3月期見通しは売上2兆500円（-11.3%）と慎重。7月以降のSwitch Online料金引き上げが消費需要に及ぼす影響を観察中。",
+      "note": "<b>直近の考察:</b> 6月から7月初の値動きは派手な上下で、需要萎縮懸念と新規投資家参加期待の綱引き状態。6月の急落（-7.19%）は期待先行の巻き戻し、5月決算での営業利益率低下（24.3%→15.6%）とメモリ高騰による約1,000億円コスト増が複合的に作用。投資単位引下げは中期的には売却圧力を軽減する好材料。"
     },
     "NASDAQ:SPCX": {
-      "outlook": "7月7日（火）のNASDAQ100採用で約$4.3Bのパッシブ買い需要が発生。IPO時150ドルから6月23日の225ドルまで急騰、現在162ドル水準で推移。フリーフロート限定（3～5%）による需給逼迫が短期的な支えになる可能性がある一方、8月上旬からのロックアップ20%段階的解除がリスク。",
-      "note": "6月12日初値150ドルから225ドルまで急騰、その後162ドルまで調整。7月7日採用は事前材料化済みで、むしろ8月6日（第1四半期決算発表日）の20%ロックアップ解除、さらに条件付き10%解除などが相場規定要因となる公算。AI compute契約$27.8B・Starlink1,000万加入者の好材料も、成長株資金流出リスク（OpenAI・Anthropic秋IPO予定）が年後半の懸念。"
+      "outlook": "<b>展望:</b> 6月12日公募価格135ドルでIPO後、6月16日に225.64ドルまで急騰も6月23日に147.11ドルまで急落。7月2日時点で162ドル付近で推移。時価総額2.16兆ドル（年間売上の約115倍）で割高感指摘。7月7日のNASDAQ100採用が近づき、浮動株需給変化に注目集中。",
+      "note": "<b>直近の考察:</b> 上場初期の浮動株薄さ（3-4%）が極端な値動きの要因。ウェドブッシュが6月末カバレッジ開始で目標株価190ドル設定も、170ドル台の前日終値との比較で上昇余地が限定的。8月初のインサイダー20%ロックアップ解除と9月までの最大44%段階解除が相場の大きな変動要因に。赤字企業でも高期待値で形成された株価、バリュエーション・流動性・マクロ環境の悪化で不安定。"
     }
   },
   "picks": [
     {
       "name": "TAIYO YUDEN CO LTD",
       "symbol": "TSE:6976",
-      "sector": "Technology",
-      "reason": "200日線比+177%・50日線比+32%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、アナリスト平均目標まで-6%の余地、52週レンジの68%の位置、時価総額21413億円、セクター: Technology。（数値スコアで自動選定）",
-      "risk": "半導体・テック市況の反落リスク、モメンタム失速時の反落。"
+      "reason": "200日線比+197%・50日線比+42%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの74%の位置、時価総額23008億円。（数値スコアで自動選定）",
+      "risk": "モメンタム失速時の反落。"
     },
     {
       "name": "KIOXIA HOLDINGS CORPORATION",
       "symbol": "TSE:285A",
-      "sector": "Technology",
-      "reason": "200日線比+167%・50日線比+12%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、アナリスト平均目標まで+51%の余地、52週レンジの66%の位置、時価総額411636億円、セクター: Technology。（数値スコアで自動選定）",
-      "risk": "半導体・テック市況の反落リスク、モメンタム失速時の反落。"
+      "reason": "200日線比+189%・50日線比+22%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの72%の位置、時価総額446495億円。（数値スコアで自動選定）",
+      "risk": "モメンタム失速時の反落。"
     },
     {
-      "name": "Moderna, Inc.",
-      "symbol": "NASDAQ:MRNA",
-      "sector": "Healthcare",
-      "reason": "200日線比+99%・50日線比+55%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、アナリスト平均目標まで-44%の余地、52週レンジの94%の位置、時価総額32十億ドル、セクター: Healthcare。（数値スコアで自動選定）",
+      "name": "SUMCO CORPORATION",
+      "symbol": "TSE:3436",
+      "reason": "200日線比+148%・50日線比+45%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの97%の位置、時価総額18084億円。（数値スコアで自動選定）",
       "risk": "52週高値圏で過熱感に注意、モメンタム失速時の反落。"
     },
     {
-      "name": "TSUGAMI CORP",
-      "symbol": "TSE:6101",
-      "sector": "Industrials",
-      "reason": "200日線比+96%・50日線比+21%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの87%の位置、時価総額3595億円、セクター: Industrials。（数値スコアで自動選定）",
+      "name": "Astera Labs, Inc.",
+      "symbol": "NASDAQ:ALAB",
+      "reason": "200日線比+130%・50日線比+48%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの88%の位置、時価総額77十億ドル。（数値スコアで自動選定）",
       "risk": "モメンタム失速時の反落。"
     }
   ]
@@ -502,7 +494,7 @@ function updateJpMkts() {
   const s = jpMarketStatus();
   document.querySelectorAll(".jp-mkt").forEach(el => {
     el.className = "jp-mkt " + s.state;
-    el.innerHTML = (s.state === "closed" ? "🌙 " : "<span class='dot'></span>") + s.label;
+    el.innerHTML = (s.state === "closed" ? "" : "<span class='dot'></span>") + s.label;
   });
 }
 setInterval(updateJpMkts, 30000);
@@ -662,10 +654,10 @@ function makeJpChart(name, symbol) {
       if (!chart) {
         chart = LightweightCharts.createChart(canvasEl, {
           autoSize: true,
-          layout: { background: { type: "solid", color: "transparent" }, textColor: "#8b949e", fontSize: 10 },
-          grid: { vertLines: { color: "#21262d" }, horzLines: { color: "#21262d" } },
-          rightPriceScale: { borderColor: "#30363d" },
-          timeScale: { borderColor: "#30363d" },
+          layout: { background: { type: "solid", color: "transparent" }, textColor: "#96938b", fontSize: 10 },
+          grid: { vertLines: { color: "#222226" }, horzLines: { color: "#222226" } },
+          rightPriceScale: { borderColor: "#2b2b31" },
+          timeScale: { borderColor: "#2b2b31" },
           crosshair: { mode: 0 },
           localization: {
             locale: "ja-JP",
@@ -678,13 +670,13 @@ function makeJpChart(name, symbol) {
       const base = (R.range === "1d" && prevClose) ? prevClose : points[0].value;
       const last = points[points.length - 1].value;
       const up = last >= base;
-      const c = up ? "#3fb950" : "#f85149";
+      const c = up ? "#5aa06c" : "#c96b6b";
       series.applyOptions({
         lineColor: c,
-        topColor: up ? "rgba(63,185,80,0.25)" : "rgba(248,81,73,0.25)",
+        topColor: up ? "rgba(90,160,108,0.22)" : "rgba(201,107,107,0.22)",
         bottomColor: "rgba(0,0,0,0)"
       });
-      chart.applyOptions({ timeScale: { timeVisible: R.interval.endsWith("m"), borderColor: "#30363d" } });
+      chart.applyOptions({ timeScale: { timeVisible: R.interval.endsWith("m"), borderColor: "#2b2b31" } });
       series.setData(points);
       chart.timeScale().fitContent();
       priceEl.textContent = fmtJp(last) + " 円";
@@ -756,7 +748,7 @@ function makeCard(item, opts) {
   const title = document.createElement("div");
   title.className = "title";
   const isJp = /^TSE:/.test(symbol);
-  title.innerHTML = (opts.pick ? "⭐ 今日の学び銘柄: " : "") + name +
+  title.innerHTML = (opts.pick ? "今日の学び銘柄：" : "") + name +
     ` <small>${symbol}${isJp ? "（東証・円建て）" : ""}</small>`;
   head.appendChild(title);
 
@@ -808,7 +800,7 @@ function makeCard(item, opts) {
   if (memo && (memo.outlook || memo.note)) {
     const d = document.createElement("details");
     d.className = "memo";
-    d.innerHTML = `<summary>📝 展望と考察メモ（${ANALYSIS.asof}時点・毎朝自動更新）</summary>
+    d.innerHTML = `<summary>展望と考察（${ANALYSIS.asof}時点）</summary>
       <div class="memo-body">${memo.outlook || ""}${memo.outlook && memo.note ? "<br><br>" : ""}${memo.note || ""}</div>`;
     card.appendChild(d);
   }
@@ -836,7 +828,7 @@ function render() {
   const ov = document.createElement("div");
   ov.className = "overview";
   ov.innerHTML = `
-    <h2>🔭 マーケット全体の見通し <span class="badge">${ANALYSIS.asof}時点・毎朝自動更新</span></h2>
+    <h2>相場概況 <span class="badge">${ANALYSIS.asof}時点</span></h2>
     ${ANALYSIS.market}`;
   grid.appendChild(ov);
 
@@ -848,9 +840,8 @@ function render() {
   if (Array.isArray(ANALYSIS.picks) && ANALYSIS.picks.length) {
     const ph = document.createElement("div");
     ph.className = "overview";
-    ph.innerHTML = `<h2>🔎 注目の個別株 <span class="badge">${ANALYSIS.asof}時点・毎朝自動更新</span></h2>
-      2000銘柄超（日米・時価総額上位）から複合スコアで毎朝選定した注目銘柄です。<b>投資推奨ではありません</b>──根拠とリスクを読んで、判断はご自身で。
-      下のシミュレーションでは毎日これらの注目銘柄を仮想購入し、株価に応じて動的に売却します（同一セクター最大2銘柄・決算発表±3日は回避）。`;
+    ph.innerHTML = `<h2>注目の個別株 <span class="badge">${ANALYSIS.asof}時点</span></h2>
+      日米の時価総額上位およそ2000銘柄から、値動きの強さをもとに毎朝機械的に選んでいます。投資助言ではありません。`;
     grid.appendChild(ph);
     ANALYSIS.picks.forEach(p => {
       const card = document.createElement("div");
@@ -861,7 +852,7 @@ function render() {
       card.appendChild(head);
       const l = document.createElement("div");
       l.className = "lesson";
-      l.innerHTML = `<b style="color:var(--up)">注目根拠:</b> ${p.reason}<br><b style="color:var(--down)">リスク:</b> ${p.risk}` +
+      l.innerHTML = `<b>根拠:</b> ${p.reason}<br><b>リスク:</b> ${p.risk}` +
         (p.deadline ? `<br><b>上昇見込み期限:</b> ${p.deadline}（シミュレーションではこの日に売却）` : "");
       card.appendChild(l);
       card.appendChild(makeChart(p.name, p.symbol));
@@ -872,7 +863,7 @@ function render() {
   // 仮想積立シミュレーション（毎朝の自動処理が portfolio.json を更新）
   const pfCard = document.createElement("div");
   pfCard.className = "overview";
-  pfCard.innerHTML = `<h2>💰 ピック積立シミュレーション（仮想） vs オルカン積立</h2><div id="pfBody">読込中…</div>`;
+  pfCard.innerHTML = `<h2>積立シミュレーション — ピック戦略 vs オルカン</h2><div id="pfBody">読込中…</div>`;
   grid.appendChild(pfCard);
   fillPortfolio();
 
@@ -888,10 +879,8 @@ async function fillPortfolio() {
     const pct = pf.investedJPY ? (pl / pf.investedJPY * 100) : 0;
     const col = pl >= 0 ? "var(--up)" : "var(--down)";
     const fmt = n => Math.round(n).toLocaleString("ja-JP");
-    let hd = `毎朝、複合スコアで選定した注目<b>4銘柄を各1000円ずつ（1日計4000円）仮想購入</b>。
-      売却は<b>ボラティリティ連動のトレーリングストップ</b>（その銘柄の平均日次変動幅ATR14×3倍、8〜25%の範囲）と<b>50日線割れ</b>のみで、保有期限はありません。
-      買い付け時は同一セクター最大2銘柄・決算発表±3日の銘柄は回避（実際の売買はしていません）。<br>
-      <span style="font-size:16px">📈 ピック戦略: 累計投資額 <b style="color:var(--text)">${fmt(pf.investedJPY)}円</b> ／
+    let hd = `毎朝、注目銘柄4つを1000円ずつ仮想購入し、同じ4000円をオルカン（2559）にも積み立てて比較しています。実際の売買はありません。<br>
+      <span style="font-size:16px">ピック戦略: 累計投資額 <b style="color:var(--text)">${fmt(pf.investedJPY)}円</b> ／
       評価額 <b style="color:var(--text)">${fmt(pf.valuationJPY)}円</b> ／
       損益 <b style="color:${col}">${pl >= 0 ? "+" : ""}${fmt(pl)}円（${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%）</b></span>
       <span style="font-size:11px">（評価額＝売却済みの受取額＋保有中の現在価値。${pf.updated} 時点）</span>`;
@@ -903,11 +892,12 @@ async function fillPortfolio() {
       const bcol = bpl >= 0 ? "var(--up)" : "var(--down)";
       const diff = pct - bpct;
       const dcol = diff >= 0 ? "var(--up)" : "var(--down)";
-      hd += `<br><span style="font-size:16px">🌏 対照実験（オルカン2559を毎日4000円積立）: 累計投資額 <b style="color:var(--text)">${fmt(b.investedJPY)}円</b> ／
+      hd += `<br><span style="font-size:16px">オルカン積立: 累計投資額 <b style="color:var(--text)">${fmt(b.investedJPY)}円</b> ／
         評価額 <b style="color:var(--text)">${fmt(bval)}円</b> ／
         損益 <b style="color:${bcol}">${bpl >= 0 ? "+" : ""}${fmt(bpl)}円（${bpct >= 0 ? "+" : ""}${bpct.toFixed(1)}%）</b></span><br>
-        <b>ピック戦略 − オルカン = <span style="color:${dcol}">${diff >= 0 ? "+" : ""}${diff.toFixed(1)}ポイント</span></b>
-        <span style="font-size:11px">（${b.startDate || ""}開始。同じ日に同じ合計額を積み立てた場合の損益率で比較）</span>`;
+        <b>差: <span style="color:${dcol}">${diff >= 0 ? "+" : ""}${diff.toFixed(1)}ポイント</span></b>
+        <span style="font-size:11px">（${b.startDate || ""}開始・損益率で比較）</span>
+        <details style="margin-top:6px"><summary style="cursor:pointer;color:var(--accent);font-size:12px">売買ルール</summary><div style="margin-top:4px;font-size:12px">買い: 複合スコア上位4銘柄（同一セクター最大2・決算発表±3日は見送り・保有中も買い増しあり）。売り: 高値からその銘柄の平均日次変動幅（ATR14）×3倍の下落（8〜25%）、または50日移動平均線割れ。保有期限なし。</div></details>`;
     }
     if (pf.open && pf.open.length) {
       hd += `<br><br><b style="color:var(--text)">保有中 ${pf.open.length}件:</b><table class="pf-table"><tr><th>銘柄</th><th>セクター</th><th>購入日</th><th>投資</th><th>現在価値</th><th>売却ライン</th></tr>` +
