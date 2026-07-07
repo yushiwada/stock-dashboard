@@ -1,7 +1,7 @@
 {
   "investedJPY": 8000,
   "realizedJPY": 0,
-  "valuationJPY": 7961.4,
+  "valuationJPY": 7545.1,
   "open": [
     {
       "symbol": "TSE:6976",
@@ -11,7 +11,7 @@
       "buyPriceJPY": 18385,
       "peakJPY": 18385,
       "costJPY": 1000,
-      "curValueJPY": 1000,
+      "curValueJPY": 930.9,
       "trailPct": 25
     },
     {
@@ -22,7 +22,7 @@
       "buyPriceJPY": 81590,
       "peakJPY": 81590,
       "costJPY": 1000,
-      "curValueJPY": 1000,
+      "curValueJPY": 923.5,
       "trailPct": 25
     },
     {
@@ -33,8 +33,8 @@
       "buyPriceJPY": 5171,
       "peakJPY": 5171,
       "costJPY": 1000,
-      "curValueJPY": 1000,
-      "trailPct": 22.6
+      "curValueJPY": 920.5,
+      "trailPct": 25
     },
     {
       "symbol": "NASDAQ:ALAB",
@@ -44,7 +44,7 @@
       "buyPriceJPY": 72952.85,
       "peakJPY": 72952.8514,
       "costJPY": 1000,
-      "curValueJPY": 961.4,
+      "curValueJPY": 961.5,
       "trailPct": 25
     },
     {
@@ -56,7 +56,8 @@
       "buyPriceJPY": 18385,
       "peakJPY": 18385,
       "costJPY": 1000,
-      "curValueJPY": 1000
+      "curValueJPY": 930.9,
+      "trailPct": 25
     },
     {
       "symbol": "TSE:285A",
@@ -67,7 +68,8 @@
       "buyPriceJPY": 81590,
       "peakJPY": 81590,
       "costJPY": 1000,
-      "curValueJPY": 1000
+      "curValueJPY": 923.5,
+      "trailPct": 25
     },
     {
       "symbol": "NASDAQ:MRNA",
@@ -76,9 +78,10 @@
       "buyDate": "2026-07-07",
       "units": 0.07542347718038563,
       "buyPriceJPY": 13258.47,
-      "peakJPY": 13258.4712,
+      "peakJPY": 13258.8802,
       "costJPY": 1000,
-      "curValueJPY": 1000
+      "curValueJPY": 1000,
+      "trailPct": 21.9
     },
     {
       "symbol": "TSE:6101",
@@ -89,7 +92,8 @@
       "buyPriceJPY": 8100,
       "peakJPY": 8100,
       "costJPY": 1000,
-      "curValueJPY": 1000
+      "curValueJPY": 954.3,
+      "trailPct": 20.5
     }
   ],
   "closed": [],
@@ -102,8 +106,8 @@
     "units": 2.6720106880427523,
     "lastBuyDate": "2026-07-07",
     "startDate": "2026-07-06",
-    "lastPriceJPY": 2994,
-    "valuationJPY": 8000
+    "lastPriceJPY": 3001,
+    "valuationJPY": 8018.7
   },
   "history": [
     {
@@ -116,9 +120,9 @@
     {
       "date": "2026-07-07",
       "inv": 8000,
-      "val": 7961.4,
+      "val": 7545.1,
       "bInv": 8000,
-      "bVal": 8000
+      "bVal": 8018.7
     }
   ]
 }
