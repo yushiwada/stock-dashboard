@@ -1,7 +1,7 @@
 {
-  "investedJPY": 8000,
+  "investedJPY": 12000,
   "realizedJPY": 0,
-  "valuationJPY": 7297.1,
+  "valuationJPY": 11166.1,
   "open": [
     {
       "symbol": "TSE:6976",
@@ -44,7 +44,7 @@
       "buyPriceJPY": 72952.85,
       "peakJPY": 72952.8514,
       "costJPY": 1000,
-      "curValueJPY": 960.4,
+      "curValueJPY": 851.8,
       "trailPct": 25
     },
     {
@@ -80,8 +80,8 @@
       "buyPriceJPY": 13258.47,
       "peakJPY": 13258.8802,
       "costJPY": 1000,
-      "curValueJPY": 998.9,
-      "trailPct": 21.9
+      "curValueJPY": 976.5,
+      "trailPct": 23.3
     },
     {
       "symbol": "TSE:6101",
@@ -94,20 +94,65 @@
       "costJPY": 1000,
       "curValueJPY": 900,
       "trailPct": 23.1
+    },
+    {
+      "symbol": "NASDAQ:DLLL",
+      "name": "GraniteShares 2x Long DELL Dail",
+      "sector": null,
+      "buyDate": "2026-07-08",
+      "units": 0.26696297136023384,
+      "buyPriceJPY": 3745.84,
+      "peakJPY": 3745.8378399999997,
+      "costJPY": 1000,
+      "curValueJPY": 1000
+    },
+    {
+      "symbol": "TSE:6976",
+      "name": "TAIYO YUDEN CO LTD",
+      "sector": "Technology",
+      "buyDate": "2026-07-08",
+      "units": 0.06114338122898196,
+      "buyPriceJPY": 16355,
+      "peakJPY": 16355,
+      "costJPY": 1000,
+      "curValueJPY": 1000
+    },
+    {
+      "symbol": "TSE:285A",
+      "name": "KIOXIA HOLDINGS CORPORATION",
+      "sector": "Technology",
+      "buyDate": "2026-07-08",
+      "units": 0.013812154696132596,
+      "buyPriceJPY": 72400,
+      "peakJPY": 72400,
+      "costJPY": 1000,
+      "curValueJPY": 1000
+    },
+    {
+      "symbol": "NASDAQ:AMDL",
+      "name": "GraniteShares 2x Long AMD Daily",
+      "sector": null,
+      "buyDate": "2026-07-08",
+      "units": 0.09598855552257667,
+      "buyPriceJPY": 10417.91,
+      "peakJPY": 10417.90862,
+      "costJPY": 1000,
+      "curValueJPY": 1000
     }
   ],
   "closed": [],
-  "lastBuyDate": "2026-07-07",
-  "updated": "2026-07-07",
+  "lastBuyDate": "2026-07-08",
+  "updated": "2026-07-08",
   "benchmark": {
-    "symbol": "TSE:2559",
-    "name": "オルカン（MAXIS全世界株式 2559）",
-    "investedJPY": 8000,
-    "units": 2.6720106880427523,
-    "lastBuyDate": "2026-07-07",
+    "symbol": "FUND:0331418A",
+    "name": "オルカン（eMAXIS Slim 全世界株式）",
+    "investedJPY": 12000,
+    "units": 0.3112919132149901,
+    "lastBuyDate": "2026-07-08",
     "startDate": "2026-07-06",
-    "lastPriceJPY": 2992,
-    "valuationJPY": 7994.7
+    "lastPriceJPY": 38532,
+    "navDate": "2026-07-07",
+    "valuationJPY": 11994.7
   },
   "history": [
     {
@@ -123,6 +168,13 @@
       "val": 7297.1,
       "bInv": 8000,
       "bVal": 7994.7
+    },
+    {
+      "date": "2026-07-08",
+      "inv": 12000,
+      "val": 11166.1,
+      "bInv": 12000,
+      "bVal": 11994.7
     }
   ]
 }
