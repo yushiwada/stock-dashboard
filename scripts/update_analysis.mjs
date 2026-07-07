@@ -518,6 +518,8 @@ async function selectPicks() {
     const mc = d.marketCap || (u.etf ? (d.netAssets || 0) : 0), vol = d.averageDailyVolume3Month || d.regularMarketVolume || 0;
     const jpy = d.currency === "JPY";
     if (!u.etf && mc < (jpy ? 2e11 : 2e9)) continue; // 株式: 時価総額 約2000億円 / 20億ドル 以上
+    // レバレッジ・インバース型ETFは除外（値動きが増幅されモメンタム比較が不公平になるため）
+    if (u.etf && /([23]x|ultra|leveraged|inverse|daily target|ブル|ベア|レバレッジ|インバース|\bbull\b|\bbear\b)/i.test(u.name)) continue;
     if (price * vol < (jpy ? 1e9 : 1e7)) continue;   // 1日売買代金 約10億円 / 1000万ドル 以上
     cands.push({
       name: u.name, symbol: u.symbol, sector: u.etf ? "ETF" : null, price, sma50: ma50, sma200: ma200,
@@ -539,7 +541,7 @@ async function selectPicks() {
   if (!picks.length) { console.log("採用なし"); return []; }
   for (const t of picks) console.log("採用:", t.name, t.symbol, "score=" + t.score.toFixed(3), "sector=" + (t.sectorName || "不明"));
   console.log("候補", cands.length, "銘柄から", picks.length, "銘柄採用（セクター上限2・決算±3日回避）");
-  return picks.map(t => ({ name: t.name, symbol: t.symbol, sector: t.sectorName || null, reason: buildReason(t), risk: buildRisk(t) }));
+  return picks.map(t => ({ name: t.name, symbol: t.symbol, sector: t.sectorName || t.sector || null, reason: buildReason(t), risk: buildRisk(t) }));
 }
 try { out.picks = await selectPicks(); }
 catch (e) { console.log("picks選定に失敗:", e.message); out.picks = []; }
