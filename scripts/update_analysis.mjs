@@ -112,11 +112,32 @@ const estCost = usage.in / 1e6 * 1 + usage.out / 1e6 * 5 + usage.searches * 0.01
 console.log(`推定コスト: $${estCost.toFixed(4)} (入力${usage.in}tok / 出力${usage.out}tok / 検索${usage.searches}回)`);
 
 const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
-const jm = text.match(/\{[\s\S]*\}/);
-if (!jm) throw new Error("JSONが見つかりません (stop_reason=" + data.stop_reason +
+// 波括弧の対応を数えてJSONを正確に切り出す（前後に余計なテキストや波括弧があっても壊れない）。
+// 文字列内の生の改行・タブ等の制御文字はスペースに置換してからパース。
+function extractJSON(t) {
+  for (let i = t.indexOf("{"); i !== -1; i = t.indexOf("{", i + 1)) {
+    let depth = 0, inStr = false, esc = false;
+    for (let j = i; j < t.length; j++) {
+      const ch = t[j];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (ch === "\\") esc = true;
+        else if (ch === '"') inStr = false;
+      } else if (ch === '"') inStr = true;
+      else if (ch === "{") depth++;
+      else if (ch === "}") {
+        depth--;
+        if (depth === 0) {
+          try { return JSON.parse(t.slice(i, j + 1).replace(/[\u0000-\u001F]+/g, " ")); } catch (e) { break; }
+        }
+      }
+    }
+  }
+  return null;
+}
+const out = extractJSON(text);
+if (!out) throw new Error("JSONが見つかりません (stop_reason=" + data.stop_reason +
   ", blocks=" + (data.content || []).map(b => b.type).join(",") + "): " + text.slice(0, 300));
-// 文字列内に生の改行・タブ等の制御文字が混ざると不正なJSONになるため、スペースに置換してからパース。
-const out = JSON.parse(jm[0].replace(/[\u0000-\u001F]+/g, " "));
 for (const k of ["asof", "market", "items", "summary"]) {
   if (!(k in out)) throw new Error("キー不足: " + k);
 }
