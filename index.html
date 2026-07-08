@@ -288,7 +288,7 @@
 /* ===== ANALYSIS_START =====
    このブロックは毎朝の自動処理（GitHub Actions + Claude API）が書き換える。手動編集しない。 */
 const ANALYSIS = {
-  "asof": "2026/7/8",
+  "asof": "2026/7/6",
   "market": "<b>米国株:</b> 7月1日のNASDAQ100は-1.54%で29,809ポイント。AI過剰投資懸念で半導体株が売却されるも、FRBウォーシュ議長がインフレリスク低下を言及し利上げを急がない観測が広がる。政策金利は3.50～3.75%で据え置き、市場では年内の追加利下げ観測は限定的。本週8日の6月FOMC議事要旨で市場心理が試される。<br><b>日本株:</b> 7月6日の日経平均は69,737.69円と小幅反落。前営業日3日の反発（69,744.07円）から調整局面。セクターローテーション継続でAI・半導体から出遅れ銘柄への資金流入が進行。野村は2026年末63,000円、上振れで70,500円を想定。NT倍率16倍超が依然高水準で平均回帰への警戒必要。<br><b>見方のコツ:</b> 7月4日（金）の米国独立記念日で市場休場。月曜の日米株価同期動向とセクター間選別の激しさが焦点。4-6月期決算本格化と半導体・ハイパースケーラー投資伸び率鈍化懸念が二大テーマ。ドル円160円前後の高値圏推移に留意。",
   "items": {
     "TSE:2559": {
@@ -318,32 +318,28 @@ const ANALYSIS = {
   },
   "picks": [
     {
-      "name": "KIOXIA HOLDINGS CORPORATION",
-      "symbol": "TSE:285A",
-      "sector": "Technology",
-      "reason": "200日線比+160%・50日線比+9%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、アナリスト平均目標まで+51%の余地、52週レンジの66%の位置、時価総額410760億円、セクター: Technology。（数値スコアで自動選定）",
-      "risk": "半導体・テック市況の反落リスク、モメンタム失速時の反落。"
-    },
-    {
       "name": "TAIYO YUDEN CO LTD",
       "symbol": "TSE:6976",
-      "sector": "Technology",
-      "reason": "200日線比+148%・50日線比+17%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、アナリスト平均目標まで+3%の余地、52週レンジの61%の位置、時価総額19648億円、セクター: Technology。（数値スコアで自動選定）",
-      "risk": "半導体・テック市況の反落リスク、モメンタム失速時の反落。"
-    },
-    {
-      "name": "GraniteShares 2x Long DELL Dail",
-      "symbol": "NASDAQ:DLLL",
-      "sector": "ETF",
-      "reason": "200日線比+117%・50日線比+20%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの73%の位置、ブル2倍ETF（スコアは倍率で調整済み）。（数値スコアで自動選定）",
+      "reason": "200日線比+197%・50日線比+42%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの74%の位置、時価総額23008億円。（数値スコアで自動選定）",
       "risk": "モメンタム失速時の反落。"
     },
     {
-      "name": "Moderna, Inc.",
-      "symbol": "NASDAQ:MRNA",
-      "sector": "Healthcare",
-      "reason": "200日線比+91%・50日線比+49%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、アナリスト平均目標まで-40%の余地、52週レンジの91%の位置、時価総額32十億ドル、セクター: Healthcare。（数値スコアで自動選定）",
+      "name": "KIOXIA HOLDINGS CORPORATION",
+      "symbol": "TSE:285A",
+      "reason": "200日線比+189%・50日線比+22%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの72%の位置、時価総額446495億円。（数値スコアで自動選定）",
+      "risk": "モメンタム失速時の反落。"
+    },
+    {
+      "name": "SUMCO CORPORATION",
+      "symbol": "TSE:3436",
+      "reason": "200日線比+148%・50日線比+45%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの97%の位置、時価総額18084億円。（数値スコアで自動選定）",
       "risk": "52週高値圏で過熱感に注意、モメンタム失速時の反落。"
+    },
+    {
+      "name": "Astera Labs, Inc.",
+      "symbol": "NASDAQ:ALAB",
+      "reason": "200日線比+130%・50日線比+48%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの88%の位置、時価総額77十億ドル。（数値スコアで自動選定）",
+      "risk": "モメンタム失速時の反落。"
     }
   ]
 };
@@ -928,11 +924,11 @@ async function fillPortfolio() {
     const pct = pf.investedJPY ? (pl / pf.investedJPY * 100) : 0;
     const col = pl >= 0 ? "var(--up)" : "var(--down)";
     const fmt = n => Math.round(n).toLocaleString("ja-JP");
-    let hd = `毎朝、注目銘柄4つを1000円ずつ仮想購入し、同じ4000円をオルカン（eMAXIS Slim 全世界株式）にも積み立てて比較しています。実際の売買はありません。<br>
+    let hd = `毎朝4000円分を注目銘柄に仮想投資し（売却代金も翌朝の購入に再投資）、同じ4000円をオルカン（eMAXIS Slim 全世界株式）にも積み立てて比較しています。実際の売買はありません。<br>
       <span style="font-size:16px">ピック戦略: 累計投資額 <b style="color:var(--text)">${fmt(pf.investedJPY)}円</b> ／
       評価額 <b style="color:var(--text)">${fmt(pf.valuationJPY)}円</b> ／
       損益 <b style="color:${col}">${pl >= 0 ? "+" : ""}${fmt(pl)}円（${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%）</b></span>
-      <span style="font-size:11px">（評価額＝売却済みの受取額＋保有中の現在価値。${pf.updated} 時点）</span>`;
+      <span style="font-size:11px">（評価額＝保有中の現在価値＋待機資金${fmt(pf.cashJPY || 0)}円。${pf.updated} 時点）</span>`;
     if (pf.benchmark && pf.benchmark.investedJPY) {
       const b = pf.benchmark;
       const bval = b.valuationJPY || 0;
@@ -959,9 +955,30 @@ async function fillPortfolio() {
         }).join("") + `</table></details>`;
     }
     if (pf.closed && pf.closed.length) {
-      const inv = pf.closed.reduce((s, p) => s + (p.costJPY || 0), 0);
-      const got = pf.closed.reduce((s, p) => s + p.sellValueJPY, 0);
-      hd += `<br><b style="color:var(--text)">売却済み ${pf.closed.length}件:</b> 投資${fmt(inv)}円 → 受取${fmt(got)}円`;
+      const cl = pf.closed;
+      const days = p => Math.max(0, Math.round((new Date(p.sellDate) - new Date(p.buyDate)) / 86400000));
+      const wins = cl.filter(p => p.sellValueJPY >= p.costJPY).length;
+      const pnl = cl.reduce((s, p) => s + (p.sellValueJPY - p.costJPY), 0);
+      const avgPct = cl.reduce((s, p) => s + (p.sellValueJPY / p.costJPY - 1), 0) / cl.length * 100;
+      const avgDays = Math.round(cl.reduce((s, p) => s + days(p), 0) / cl.length);
+      const pcol = pnl >= 0 ? "var(--up)" : "var(--down)";
+      hd += `<br><b style="color:var(--text)">売買成績:</b> ${cl.length}回 ／ 勝率 ${(wins / cl.length * 100).toFixed(0)}% ／
+        平均損益 ${avgPct >= 0 ? "+" : ""}${avgPct.toFixed(1)}% ／ 平均保有 ${avgDays}日 ／
+        確定損益 <b style="color:${pcol}">${pnl >= 0 ? "+" : ""}${fmt(pnl)}円</b>`;
+      const reasons = {};
+      cl.forEach(p => { const r = (p.sellReason || "その他").split("(")[0]; (reasons[r] = reasons[r] || []).push(p); });
+      hd += `<details style="margin-top:4px"><summary style="cursor:pointer;color:var(--accent);font-size:13px">売却理由別の成績と履歴</summary>` +
+        `<table class="pf-table"><tr><th>売却理由</th><th>回数</th><th>勝率</th><th>平均損益</th></tr>` +
+        Object.entries(reasons).map(([r, ps]) => {
+          const w = ps.filter(p => p.sellValueJPY >= p.costJPY).length;
+          const a = ps.reduce((s, p) => s + (p.sellValueJPY / p.costJPY - 1), 0) / ps.length * 100;
+          return `<tr><td>${r}</td><td>${ps.length}</td><td>${(w / ps.length * 100).toFixed(0)}%</td><td style="color:${a >= 0 ? "var(--up)" : "var(--down)"}">${a >= 0 ? "+" : ""}${a.toFixed(1)}%</td></tr>`;
+        }).join("") + `</table>` +
+        `<table class="pf-table" style="margin-top:6px"><tr><th>銘柄</th><th>購入日</th><th>売却日</th><th>理由</th><th>損益</th></tr>` +
+        cl.slice(-50).reverse().map(p => {
+          const d = p.sellValueJPY - p.costJPY;
+          return `<tr><td>${p.name}</td><td>${p.buyDate}</td><td>${p.sellDate}</td><td>${(p.sellReason || "").split("(")[0]}</td><td style="color:${d >= 0 ? "var(--up)" : "var(--down)"}">${d >= 0 ? "+" : ""}${fmt(d)}円</td></tr>`;
+        }).join("") + `</table></details>`;
     }
     el.innerHTML = hd;
   } catch (e) {
