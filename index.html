@@ -32,7 +32,7 @@
     gap: 16px;
     flex-wrap: wrap;
   }
-  header h1 { font-size: 18px; font-weight: 300; letter-spacing: 0.42em; margin-right: -0.42em; color: var(--text); }
+  header h1 { font-size: 28px; font-weight: 300; letter-spacing: 0.42em; margin-right: -0.42em; color: var(--text); }
   header .date { color: var(--sub); font-size: 14px; }
   .toolbar { margin-left: auto; display: flex; gap: 8px; }
   .btn {
@@ -300,7 +300,7 @@
 
 <footer>
   東証銘柄はYahoo Financeのデータを円建てで表示（約20分遅延の場合あり。取得に失敗したら少し待って再読み込み）。米国株・指数はTradingViewの埋め込みチャート（指数はCFD価格）。<br>
-  銘柄の追加・削除・並べ替えはこのブラウザに保存されます。「展望と考察」は毎朝の定期処理で更新。掲載内容は情報の記録が目的で、投資助言ではありません。
+  銘柄の追加・削除・並べ替えはこのブラウザに保存されます。注目銘柄と積立シミュレーションは毎朝の定期処理で更新。掲載内容は情報の記録が目的で、投資助言ではありません。
 </footer>
 
 <script>
@@ -339,30 +339,26 @@ const ANALYSIS = {
     {
       "name": "TAIYO YUDEN CO LTD",
       "symbol": "TSE:6976",
-      "sector": "Technology",
-      "reason": "200日線比+154%・50日線比+20%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、アナリスト平均目標まで+1%の余地、52週レンジの62%の位置、時価総額19898億円、セクター: Technology。（数値スコアで自動選定）",
-      "risk": "半導体・テック市況の反落リスク、モメンタム失速時の反落。"
+      "reason": "200日線比+197%・50日線比+42%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの74%の位置、時価総額23008億円。（数値スコアで自動選定）",
+      "risk": "モメンタム失速時の反落。"
     },
     {
       "name": "KIOXIA HOLDINGS CORPORATION",
       "symbol": "TSE:285A",
-      "sector": "Technology",
-      "reason": "200日線比+159%・50日線比+9%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、アナリスト平均目標まで+52%の余地、52週レンジの65%の位置、時価総額405288億円、セクター: Technology。（数値スコアで自動選定）",
-      "risk": "半導体・テック市況の反落リスク、モメンタム失速時の反落。"
-    },
-    {
-      "name": "GraniteShares 2x Long DELL Dail",
-      "symbol": "NASDAQ:DLLL",
-      "sector": "ETF",
-      "reason": "200日線比+120%・50日線比+21%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの73%の位置、ブル2倍ETF（スコアは倍率で調整済み）。（数値スコアで自動選定）",
+      "reason": "200日線比+189%・50日線比+22%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの72%の位置、時価総額446495億円。（数値スコアで自動選定）",
       "risk": "モメンタム失速時の反落。"
     },
     {
-      "name": "Moderna, Inc.",
-      "symbol": "NASDAQ:MRNA",
-      "sector": "Healthcare",
-      "reason": "200日線比+93%・50日線比+50%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、アナリスト平均目標まで-43%の余地、52週レンジの91%の位置、時価総額32十億ドル、セクター: Healthcare。（数値スコアで自動選定）",
+      "name": "SUMCO CORPORATION",
+      "symbol": "TSE:3436",
+      "reason": "200日線比+148%・50日線比+45%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの97%の位置、時価総額18084億円。（数値スコアで自動選定）",
       "risk": "52週高値圏で過熱感に注意、モメンタム失速時の反落。"
+    },
+    {
+      "name": "Astera Labs, Inc.",
+      "symbol": "NASDAQ:ALAB",
+      "reason": "200日線比+130%・50日線比+48%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの88%の位置、時価総額77十億ドル。（数値スコアで自動選定）",
+      "risk": "モメンタム失速時の反落。"
     }
   ]
 };
@@ -747,7 +743,6 @@ function makeChart(name, symbol) {
 
 function makeCard(item, opts) {
   const { name, symbol, lesson } = item;
-  const memo = ANALYSIS.items[symbol];
   const card = document.createElement("div");
   card.className = "card" + (opts.pick ? " pick" : "");
 
@@ -804,14 +799,6 @@ function makeCard(item, opts) {
   }
 
   card.appendChild(makeChart(name, symbol));
-
-  if (memo && (memo.outlook || memo.note)) {
-    const d = document.createElement("details");
-    d.className = "memo";
-    d.innerHTML = `<summary>展望と考察（${ANALYSIS.asof}時点）</summary>
-      <div class="memo-body">${memo.outlook || ""}${memo.outlook && memo.note ? "<br><br>" : ""}${memo.note || ""}</div>`;
-    card.appendChild(d);
-  }
   return card;
 }
 
@@ -832,13 +819,6 @@ function removeItem(i) {
 // ===== 描画 =====
 function render() {
   grid.innerHTML = "";
-
-  const ov = document.createElement("div");
-  ov.className = "overview";
-  ov.innerHTML = `
-    <h2>相場概況 <span class="badge">${ANALYSIS.asof}時点</span></h2>
-    ${ANALYSIS.market}`;
-  grid.appendChild(ov);
 
   grid.appendChild(makeCard(pick, { pick: true }));
 
