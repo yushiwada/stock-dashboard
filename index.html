@@ -116,9 +116,9 @@
     background: none;
     border: none;
     color: var(--sub);
-    font-size: 14px;
+    font-size: 16px;
     cursor: pointer;
-    padding: 4px 7px;
+    padding: 6px 10px;
     border-radius: 6px;
     line-height: 1;
   }
@@ -199,12 +199,6 @@
     padding: 0 24px;
     font-size: 17px;
   }
-  .news {
-    max-width: 1800px;
-    margin: 0 auto;
-    padding: 0 24px;
-    height: 500px;
-  }
   footer {
     padding: 24px;
     color: var(--sub);
@@ -229,14 +223,6 @@
     .news, .section-title { padding: 0 12px; }
     footer { padding: 16px 12px; }
   }
-  /* 日本語ニュース */
-  .jp-news { height:100%; overflow-y:auto; background:var(--card); border:1px solid var(--border); border-radius:10px; padding:4px 0; }
-  .jp-news a.item { display:block; padding:10px 16px; border-bottom:1px solid var(--border); color:var(--text); text-decoration:none; }
-  .jp-news a.item:last-child { border-bottom:none; }
-  .jp-news a.item:hover { background:var(--bg); }
-  .jp-news .t { font-size:13px; line-height:1.55; }
-  .jp-news .m { font-size:11px; color:var(--sub); margin-top:3px; }
-  .jp-news .loading, .jp-news .err { padding:16px; color:var(--sub); font-size:13px; }
 </style>
 </head>
 <body>
@@ -293,11 +279,6 @@
 
 <div class="grid" id="grid"></div>
 
-<h2 class="section-title">マーケットニュース</h2>
-<div class="news">
-  <div id="jpNews" class="jp-news"><div class="loading">ニュースを読み込み中…</div></div>
-</div>
-
 <footer>
   東証銘柄はYahoo Financeのデータを円建てで表示（約20分遅延の場合あり。取得に失敗したら少し待って再読み込み）。米国株・指数はTradingViewの埋め込みチャート（指数はCFD価格）。<br>
   銘柄の追加・削除・並べ替えはこのブラウザに保存されます。注目銘柄と積立シミュレーションは毎朝の定期処理で更新。掲載内容は情報の記録が目的で、投資助言ではありません。
@@ -307,7 +288,7 @@
 /* ===== ANALYSIS_START =====
    このブロックは毎朝の自動処理（GitHub Actions + Claude API）が書き換える。手動編集しない。 */
 const ANALYSIS = {
-  "asof": "2026/7/8",
+  "asof": "2026/7/6",
   "market": "<b>米国株:</b> 7月1日のNASDAQ100は-1.54%で29,809ポイント。AI過剰投資懸念で半導体株が売却されるも、FRBウォーシュ議長がインフレリスク低下を言及し利上げを急がない観測が広がる。政策金利は3.50～3.75%で据え置き、市場では年内の追加利下げ観測は限定的。本週8日の6月FOMC議事要旨で市場心理が試される。<br><b>日本株:</b> 7月6日の日経平均は69,737.69円と小幅反落。前営業日3日の反発（69,744.07円）から調整局面。セクターローテーション継続でAI・半導体から出遅れ銘柄への資金流入が進行。野村は2026年末63,000円、上振れで70,500円を想定。NT倍率16倍超が依然高水準で平均回帰への警戒必要。<br><b>見方のコツ:</b> 7月4日（金）の米国独立記念日で市場休場。月曜の日米株価同期動向とセクター間選別の激しさが焦点。4-6月期決算本格化と半導体・ハイパースケーラー投資伸び率鈍化懸念が二大テーマ。ドル円160円前後の高値圏推移に留意。",
   "items": {
     "TSE:2559": {
@@ -339,30 +320,26 @@ const ANALYSIS = {
     {
       "name": "TAIYO YUDEN CO LTD",
       "symbol": "TSE:6976",
-      "sector": "Technology",
-      "reason": "200日線比+167%・50日線比+26%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、アナリスト平均目標まで-4%の余地、52週レンジの66%の位置、時価総額20931億円、セクター: Technology。（数値スコアで自動選定）",
-      "risk": "半導体・テック市況の反落リスク、モメンタム失速時の反落。"
+      "reason": "200日線比+197%・50日線比+42%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの74%の位置、時価総額23008億円。（数値スコアで自動選定）",
+      "risk": "モメンタム失速時の反落。"
     },
     {
       "name": "KIOXIA HOLDINGS CORPORATION",
       "symbol": "TSE:285A",
-      "sector": "Technology",
-      "reason": "200日線比+169%・50日線比+13%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、アナリスト平均目標まで+47%の余地、52週レンジの68%の位置、時価総額421431億円、セクター: Technology。（数値スコアで自動選定）",
-      "risk": "半導体・テック市況の反落リスク、モメンタム失速時の反落。"
-    },
-    {
-      "name": "GraniteShares 2x Long DELL Dail",
-      "symbol": "NASDAQ:DLLL",
-      "sector": "ETF",
-      "reason": "200日線比+120%・50日線比+21%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの73%の位置、ブル2倍ETF（スコアは倍率で調整済み）。（数値スコアで自動選定）",
+      "reason": "200日線比+189%・50日線比+22%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの72%の位置、時価総額446495億円。（数値スコアで自動選定）",
       "risk": "モメンタム失速時の反落。"
     },
     {
-      "name": "Moderna, Inc.",
-      "symbol": "NASDAQ:MRNA",
-      "sector": "Healthcare",
-      "reason": "200日線比+93%・50日線比+50%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、アナリスト平均目標まで-43%の余地、52週レンジの91%の位置、時価総額32十億ドル、セクター: Healthcare。（数値スコアで自動選定）",
+      "name": "SUMCO CORPORATION",
+      "symbol": "TSE:3436",
+      "reason": "200日線比+148%・50日線比+45%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの97%の位置、時価総額18084億円。（数値スコアで自動選定）",
       "risk": "52週高値圏で過熱感に注意、モメンタム失速時の反落。"
+    },
+    {
+      "name": "Astera Labs, Inc.",
+      "symbol": "NASDAQ:ALAB",
+      "reason": "200日線比+130%・50日線比+48%の上昇基調、50日・200日移動平均線がともに上向きの強いトレンド、52週レンジの88%の位置、時価総額77十億ドル。（数値スコアで自動選定）",
+      "risk": "モメンタム失速時の反落。"
     }
   ]
 };
@@ -415,7 +392,39 @@ const ROTATION = [
   { name: "RSP（S&P500均等加重）", symbol: "AMEX:RSP",
     lesson: "S&P500の500社を全て同じ比率で持つETF。通常のS&P500（時価総額加重）との差は「大型テック集中度」そのもの。この差が開くほどAI相場の一極集中が進んでいるサイン。" },
   { name: "ARKK（イノベーション株）", symbol: "CBOE:ARKK",
-    lesson: "破壊的イノベーション企業に集中投資するアクティブETF。上場したSpaceX(SPCX)を約4.5%保有。ハイリスク・ハイリターンなテーマ投資の値動きの荒さを学べる。" }
+    lesson: "破壊的イノベーション企業に集中投資するアクティブETF。上場したSpaceX(SPCX)を約4.5%保有。ハイリスク・ハイリターンなテーマ投資の値動きの荒さを学べる。" },
+  { name: "QQQ（NASDAQ100 ETF）", symbol: "NASDAQ:QQQ",
+    lesson: "NASDAQ100に連動する世界最大級のETF。CFD価格の指数チャートと見比べると、ETFの分配金や経費率がリターンに与える影響がわかる。" },
+  { name: "VOO（S&P500 ETF）", symbol: "AMEX:VOO",
+    lesson: "経費率0.03%という超低コストのS&P500 ETF。インデックス投資の王道で、コストの差が長期で複利的に効くことを学ぶ基準点。" },
+  { name: "VTI（米国株全体）", symbol: "AMEX:VTI",
+    lesson: "米国の上場企業ほぼ全て（約3500社）を含むETF。S&P500（大型500社）との差分が「中小型株の効果」そのもの。長期チャートで比べると面白い。" },
+  { name: "EFA（先進国株・米国除く）", symbol: "AMEX:EFA",
+    lesson: "日本や欧州など米国以外の先進国株ETF。米国株とのリターン差が「なぜオルカンの6割は米国なのか」を体感させてくれる。" },
+  { name: "AGG（米国総合債券）", symbol: "AMEX:AGG",
+    lesson: "米国の投資適格債券をまるごと持つETF。株の暴落時にどれだけ守ってくれるかを見ると、株式と債券の分散の意味がわかる。" },
+  { name: "HYG（ハイイールド債）", symbol: "AMEX:HYG",
+    lesson: "低格付け企業の高利回り債券ETF。名前は債券だが値動きは株に近い。「利回りが高いものはリスクも高い」の生きた教材。" },
+  { name: "XLF（米国金融セクター）", symbol: "AMEX:XLF",
+    lesson: "米国の銀行・保険中心のセクターETF。金利が上がると収益が伸びやすく、金利と株価の関係を学ぶのに最適。" },
+  { name: "XLV（米国ヘルスケア）", symbol: "AMEX:XLV",
+    lesson: "製薬・医療機器のセクターETF。景気に左右されにくいディフェンシブ銘柄の代表で、下落相場での耐性を観察できる。" },
+  { name: "XLP（米国生活必需品）", symbol: "AMEX:XLP",
+    lesson: "食品・日用品のセクターETF。不況でも人は歯磨き粉を買う、という「不況耐性」の教科書的な存在。" },
+  { name: "GDX（金鉱株）", symbol: "AMEX:GDX",
+    lesson: "金鉱山会社のETF。金価格が10%動くと金鉱株は20〜30%動くことが多い「実質レバレッジ」。GLD（金現物）と重ねて見ると差が歴然。" },
+  { name: "USO（原油）", symbol: "AMEX:USO",
+    lesson: "原油先物に連動するETF。2020年に原油価格がマイナスになった事件の当事者。先物のロールコストという落とし穴を学べる。" },
+  { name: "BRK.B（バークシャー）", symbol: "NYSE:BRK.B",
+    lesson: "バフェットの投資会社。無配当・自社株買い方針で、S&P500に60年勝ち続けてきた複利の見本。ポートフォリオそのものが教材。" },
+  { name: "SPYD（米国高配当・均等加重）", symbol: "AMEX:SPYD",
+    lesson: "S&P500の高配当上位80社を均等に持つETF。VYMより配当利回り重視で値動きが荒い。「高配当の罠」を学ぶ比較対象に。" },
+  { name: "1343（東証REIT指数）", symbol: "TSE:1343",
+    lesson: "日本の不動産投資信託（REIT）全体に投資するETF。株とも債券とも違う値動きで、分配金利回りと金利の逆相関を学べる。" },
+  { name: "1540（純金上場信託）", symbol: "TSE:1540",
+    lesson: "円建てで金現物に投資できる東証ETF。ドル建てのGLDと見比べると、金価格と為替の二重の動きが分解できる。" },
+  { name: "1489（日経高配当株50）", symbol: "TSE:1489",
+    lesson: "日経225の中の高配当50銘柄に投資するETF。銀行・商社・通信が中心で、日本のバリュー株相場の体温計になる。" }
 ];
 
 // ===== 銘柄リストの読み書き（このブラウザに保存） =====
@@ -773,9 +782,11 @@ function makeCard(item, opts) {
     head.appendChild(mkBtn("▶", "後ろへ移動", "", () => moveItem(i, 1)));
     head.appendChild(mkBtn("✕", "この銘柄を削除", "del", () => removeItem(i)));
 
-    // ドラッグ＆ドロップ並べ替え
-    title.draggable = true;
-    title.addEventListener("dragstart", e => {
+    // ドラッグ＆ドロップ並べ替え（ヘッダー全体をつかんで移動できる）
+    head.draggable = true;
+    head.style.cursor = "grab";
+    head.title = "ドラッグして並べ替え";
+    head.addEventListener("dragstart", e => {
       e.dataTransfer.setData("text/plain", String(i));
       e.dataTransfer.effectAllowed = "move";
     });
@@ -824,8 +835,6 @@ function removeItem(i) {
 function render() {
   grid.innerHTML = "";
 
-  grid.appendChild(makeCard(pick, { pick: true }));
-
   list.forEach((item, i) => grid.appendChild(makeCard(item, { editable: true, index: i })));
 
   // 注目個別株（毎朝AIが選定・一番最後に表示）
@@ -866,6 +875,9 @@ function render() {
   grid.appendChild(pfCard);
   fillPortfolio();
 
+  // 今日の学び銘柄（教育用ローテーション・一番最後に表示）
+  grid.appendChild(makeCard(pick, { pick: true }));
+
   renderTape(); // 現在の銘柄リストにティッカーテープを連動
 }
 
@@ -899,13 +911,14 @@ async function fillPortfolio() {
         <details style="margin-top:6px"><summary style="cursor:pointer;color:var(--accent);font-size:12px">売買ルール</summary><div style="margin-top:4px;font-size:12px">買い: 複合スコア上位4銘柄（同一セクター最大2・決算発表±3日は見送り・保有中も買い増しあり）。売り: 高値からその銘柄の平均日次変動幅（ATR14）×3倍の下落（8〜25%）、または50日移動平均線割れ。保有期限なし。</div></details>`;
     }
     if (pf.open && pf.open.length) {
-      hd += `<br><br><b style="color:var(--text)">保有中 ${pf.open.length}件:</b><table class="pf-table"><tr><th>銘柄</th><th>セクター</th><th>購入日</th><th>投資</th><th>現在価値</th><th>売却ライン</th></tr>` +
+      const winners = pf.open.filter(p => (p.curValueJPY != null ? p.curValueJPY : p.costJPY) >= p.costJPY).length;
+      hd += `<br><details style="margin-top:8px"><summary style="cursor:pointer;color:var(--accent);font-size:13px">保有中 ${pf.open.length}件（プラス${winners}・マイナス${pf.open.length - winners}）を表示</summary><table class="pf-table"><tr><th>銘柄</th><th>セクター</th><th>購入日</th><th>投資</th><th>現在価値</th><th>売却ライン</th></tr>` +
         pf.open.map(p => {
           const cv = p.curValueJPY != null ? p.curValueJPY : p.costJPY;
           const c = cv >= p.costJPY ? "var(--up)" : "var(--down)";
           const stop = p.trailPct != null ? `ピーク比-${p.trailPct}%` : "—";
           return `<tr><td>${p.name}</td><td>${p.sector || "—"}</td><td>${p.buyDate}</td><td>${p.costJPY}円</td><td style="color:${c}">${cv.toFixed(1)}円</td><td>${stop}</td></tr>`;
-        }).join("") + `</table>`;
+        }).join("") + `</table></details>`;
     }
     if (pf.closed && pf.closed.length) {
       const inv = pf.closed.reduce((s, p) => s + (p.costJPY || 0), 0);
@@ -1133,39 +1146,6 @@ inNameEl.addEventListener("focus", () => {
 inNameEl.addEventListener("blur", () => setTimeout(() => { suggListEl.style.display = "none"; }, 150));
 
 
-// ===== 日本語マーケットニュース（株式に絞ったGoogle News検索RSS → rss2jsonでCORS対応JSON化。日経新聞は会員限定のため出典で除外） =====
-async function loadJpNews() {
-  const el = document.getElementById("jpNews");
-  if (!el) return;
-  const feed = "https://news.google.com/rss/search?q=" + encodeURIComponent("株価 OR 日経平均 OR 東証 OR 決算 OR 米国株 OR TOPIX when:2d") + "&hl=ja&gl=JP&ceid=JP:ja";
-  const api = "https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(feed);
-  const ctl = new AbortController();
-  const tid = setTimeout(() => ctl.abort(), 12000);
-  const esc = s => (s || "").replace(/[<>&"]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c]));
-  const rel = ms => { const s = (Date.now() - ms) / 1000; if (s < 3600) return Math.max(1, Math.floor(s / 60)) + "分前"; if (s < 86400) return Math.floor(s / 3600) + "時間前"; return Math.floor(s / 86400) + "日前"; };
-  const EXCLUDE = /日本経済新聞|日経|NIKKEI/i; // 出典が日経系（会員登録が必要）の記事は除外。見出しの「日経平均」は対象外
-  try {
-    const r = await fetch(api, { signal: ctl.signal });
-    clearTimeout(tid);
-    const j = await r.json();
-    if (j.status !== "ok" || !Array.isArray(j.items) || !j.items.length) throw new Error("no items");
-    const rows = [];
-    for (const it of j.items) {
-      let title = it.title || "", src = "";
-      const mm = title.match(/^(.*) - ([^-]+)$/);
-      if (mm) { title = mm[1]; src = mm[2]; }
-      if (EXCLUDE.test(src)) continue;
-      const when = it.pubDate ? rel(new Date(it.pubDate.replace(" ", "T") + "Z").getTime()) : "";
-      rows.push('<a class="item" href="' + (it.link || "#") + '" target="_blank" rel="noopener"><div class="t">' + esc(title) + '</div><div class="m">' + esc(src) + (src && when ? " · " : "") + when + '</div></a>');
-      if (rows.length >= 20) break;
-    }
-    el.innerHTML = rows.length ? rows.join("") : '<div class="err">表示できるニュースがありませんでした。</div>';
-  } catch (e) {
-    clearTimeout(tid);
-    el.innerHTML = '<div class="err">ニュースの取得に失敗しました（時間をおいて再読み込みを）。</div>';
-  }
-}
-
 // ===== 追加・リセットUI =====
 const addPanel = document.getElementById("addPanel");
 document.getElementById("addBtn").addEventListener("click", () => {
@@ -1207,8 +1187,6 @@ document.getElementById("resetBtn").addEventListener("click", () => {
 });
 
 render();
-loadJpNews();
-setInterval(loadJpNews, 900000);
 </script>
 
 </body>
