@@ -1,6 +1,6 @@
 // 毎朝の「展望と考察」自動更新スクリプト（GitHub Actionsで実行）
 // 1) LLM・有料APIは不使用（0円運用）。無料の株価データのみで毎日更新する
-// 2) 複合スコア上位4銘柄を毎日1000円ずつ仮想購入（セクター上限2・決算±3日回避・保有中も買い増しあり）、
+// 2) 毎日4000円＋売却代金を再投資（1000円=1ロット）で複合スコア上位に配分（セクター上限2・決算±3日回避・買い増しあり）、
 //    売却はATR連動トレーリングストップ（ATR14×3、8〜25%）と50日線割れのみ（保有期限なし）
 // 3) 対照実験: オルカン（eMAXIS Slim 全世界株式・投信協会CSVの基準価額）を毎日4000円仮想積立して比較
 // 4) ユニバースは日米の株式（時価総額上位）＋ETF（出来高上位）＋主要投資信託
@@ -344,7 +344,7 @@ async function batchQuotes(entries) {
   return out;
 }
 // ===== 制約付き採用: スコア順に ①決算±3日回避 ②同一セクター最大2 で4銘柄選ぶ =====
-const MAX_PER_SECTOR = 2, TOP_N = 4, POOL_N = 16;
+const MAX_PER_SECTOR = 2, TOP_N = 8, POOL_N = 24;
 async function adoptWithConstraints(ranked) {
   const pool = ranked.slice(0, POOL_N);
   // 上位候補だけ追加情報（セクター・決算日・アナリスト目標）を取得
@@ -490,7 +490,8 @@ try {
     const trendBreak = m ? m.price < m.sma50 : false;
     if (trailingHit || trendBreak) {
       const v = pos.units * pj;
-      pf.realizedJPY += v;
+      pf.realizedJPY += v;                        // 累計の受取額（統計用）
+      pf.cashJPY = Math.round(((pf.cashJPY || 0) + v) * 10) / 10; // 売却代金は待機資金へ→翌朝の購入予算に再投資
       const why = trailingHit ? `トレーリングストップ(ピーク比-${pos.trailPct}%)` : "50日線割れ";
       pf.closed.push({ ...pos, sellDate: todayISO, sellValueJPY: Math.round(v * 10) / 10, sellReason: why });
       console.log("売却:", pos.name, why, pos.costJPY + "円 →", v.toFixed(1) + "円");
@@ -500,18 +501,42 @@ try {
   }
   pf.open = still;
 
-  // ===== 当日の仮想購入(4銘柄・各1000円・1日1回のみ)=====
+  // ===== 当日の仮想購入（新規4000円＋売却代金の再投資。1000円=1ロット、1日1回のみ）=====
+  let boughtToday = null;
   if (pf.lastBuyDate !== todayISO) {
-    for (const p of out.picks) {
-      const pj = priceJPY[p.symbol];
-      if (pj == null) continue;
-      pf.open.push({
-        symbol: p.symbol, name: p.name, sector: p.sector || null, buyDate: todayISO,
-        units: 1000 / pj, buyPriceJPY: Math.round(pj * 100) / 100, peakJPY: pj, costJPY: 1000
-      });
-      pf.investedJPY += 1000;
+    let budget = 4000 + (pf.cashJPY || 0);
+    const LOT = 1000;
+    const nLots = Math.floor(budget / LOT);
+    const buyable = out.picks.filter(p => priceJPY[p.symbol] != null);
+    const alloc = {};
+    if (buyable.length && nLots > 0) {
+      // スコア上位から1ロットずつ配る（ロットが余れば上位に2周目）
+      for (let k = 0; k < nLots; k++) {
+        const p = buyable[k % buyable.length];
+        alloc[p.symbol] = (alloc[p.symbol] || 0) + LOT;
+      }
+      for (const p of buyable) {
+        const amt = alloc[p.symbol];
+        if (!amt) continue;
+        const pj = priceJPY[p.symbol];
+        pf.open.push({
+          symbol: p.symbol, name: p.name, sector: p.sector || null, buyDate: todayISO,
+          units: amt / pj, buyPriceJPY: Math.round(pj * 100) / 100, peakJPY: pj, costJPY: amt
+        });
+        budget -= amt;
+        console.log("購入:", p.name, amt + "円");
+      }
     }
+    pf.investedJPY += 4000;                      // 新規入金分のみ（再投資分は二重計上しない）
+    pf.cashJPY = Math.round(budget * 10) / 10;   // 1000円未満の端数は待機資金として翌日へ繰越
     pf.lastBuyDate = todayISO;
+    boughtToday = alloc;
+  }
+  // サイトに表示する注目銘柄は実際に買った銘柄（買いのない再実行日は上位4件）
+  if (boughtToday && Object.keys(boughtToday).length) {
+    out.picks = out.picks.filter(p => boughtToday[p.symbol]);
+  } else {
+    out.picks = out.picks.slice(0, 4);
   }
 
   // ===== 対照実験: オルカン(eMAXIS Slim 全世界株式・基準価額)を毎日4000円仮想積立 =====
@@ -552,7 +577,7 @@ try {
     pos.curValueJPY = pj != null ? Math.round(pos.units * pj * 10) / 10 : pos.costJPY;
     openValue += pos.curValueJPY;
   }
-  pf.valuationJPY = Math.round((pf.realizedJPY + openValue) * 10) / 10;
+  pf.valuationJPY = Math.round(((pf.cashJPY || 0) + openValue) * 10) / 10; // 評価額＝待機資金＋保有分
   pf.realizedJPY = Math.round(pf.realizedJPY * 10) / 10;
   pf.updated = todayISO;
 
