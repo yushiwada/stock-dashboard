@@ -63,6 +63,10 @@ ${cur[0].slice(0, 3500)}
 制約: 投資助言はしない（事実とアナリスト見通しの紹介に留める）。各テキストは日本語。`;
 
 // ===== Claude API 呼び出し（pause_turn 継続ループ + 使用量ログ） =====
+// API障害・利用上限などで失敗しても、解説の更新だけをスキップして
+// 銘柄選定と積立シミュレーションは必ず実行する（catch節でフォールバック）。
+let out = null;
+try {
 const messages = [{ role: "user", content: prompt }];
 let data;
 const usage = { in: 0, out: 0, searches: 0 };
@@ -135,7 +139,7 @@ function extractJSON(t) {
   }
   return null;
 }
-const out = extractJSON(text);
+out = extractJSON(text);
 if (!out) throw new Error("JSONが見つかりません (stop_reason=" + data.stop_reason +
   ", blocks=" + (data.content || []).map(b => b.type).join(",") + "): " + text.slice(0, 300));
 for (const k of ["asof", "market", "items", "summary"]) {
@@ -152,6 +156,15 @@ const deepClean = o => {
   return o;
 };
 deepClean(out);
+} catch (e) {
+  console.log("解説の更新をスキップ（API失敗）:", e.message.slice(0, 300));
+  // 既存のANALYSISブロックから前回の内容を取り出して使い回す（picksは後で新しく選定し直す）
+  const om = cur[0].match(/const ANALYSIS = ([\s\S]*?);\s*\n\/\* ===== ANALYSIS_END/);
+  let old = null;
+  try { old = om ? JSON.parse(om[1]) : null; } catch (e2) {}
+  out = old || { asof: today, market: "", items: {} };
+  out.summary = today + " は解説の更新をスキップしました（Claude APIエラー）。銘柄選定と積立シミュレーションは通常どおり更新済み。";
+}
 // ===== 注目個別株の選定（数値ベースの複合スコア。Haikuの判断は使わない） =====
 // 2000銘柄超のユニバースから複合スコア上位を選び、
 // ①決算発表±3日以内は回避 ②同一セクター最大2銘柄 の制約で4銘柄採用。
