@@ -1,7 +1,7 @@
 {
   "investedJPY": 12000,
   "realizedJPY": 0,
-  "valuationJPY": 11166.1,
+  "valuationJPY": 11166.9,
   "open": [
     {
       "symbol": "TSE:6976",
@@ -44,7 +44,7 @@
       "buyPriceJPY": 72952.85,
       "peakJPY": 72952.8514,
       "costJPY": 1000,
-      "curValueJPY": 851.8,
+      "curValueJPY": 852,
       "trailPct": 25
     },
     {
@@ -80,7 +80,7 @@
       "buyPriceJPY": 13258.47,
       "peakJPY": 13258.8802,
       "costJPY": 1000,
-      "curValueJPY": 976.5,
+      "curValueJPY": 976.7,
       "trailPct": 23.3
     },
     {
@@ -102,9 +102,10 @@
       "buyDate": "2026-07-08",
       "units": 0.26696297136023384,
       "buyPriceJPY": 3745.84,
-      "peakJPY": 3745.8378399999997,
+      "peakJPY": 3746.5764,
       "costJPY": 1000,
-      "curValueJPY": 1000
+      "curValueJPY": 1000.2,
+      "trailPct": 25
     },
     {
       "symbol": "TSE:6976",
@@ -115,7 +116,8 @@
       "buyPriceJPY": 16355,
       "peakJPY": 16355,
       "costJPY": 1000,
-      "curValueJPY": 1000
+      "curValueJPY": 1000,
+      "trailPct": 25
     },
     {
       "symbol": "TSE:285A",
@@ -126,7 +128,8 @@
       "buyPriceJPY": 72400,
       "peakJPY": 72400,
       "costJPY": 1000,
-      "curValueJPY": 1000
+      "curValueJPY": 1000,
+      "trailPct": 25
     },
     {
       "symbol": "NASDAQ:AMDL",
@@ -135,9 +138,10 @@
       "buyDate": "2026-07-08",
       "units": 0.09598855552257667,
       "buyPriceJPY": 10417.91,
-      "peakJPY": 10417.90862,
+      "peakJPY": 10419.9627,
       "costJPY": 1000,
-      "curValueJPY": 1000
+      "curValueJPY": 1000.2,
+      "trailPct": 25
     }
   ],
   "closed": [],
@@ -172,7 +176,7 @@
     {
       "date": "2026-07-08",
       "inv": 12000,
-      "val": 11166.1,
+      "val": 11166.9,
       "bInv": 12000,
       "bVal": 11994.7
     }
