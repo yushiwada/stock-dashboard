@@ -1,14 +1,11 @@
 // 毎朝の「展望と考察」自動更新スクリプト（GitHub Actionsで実行）
-// 1) Claude API（Haiku・ウェブ検索付き）で最新情報を調べ、index.html の ANALYSIS ブロックを書き換える
-//    ※銘柄選定はLLMを使わず数値ベース（毎日Haikuの解説文コストのみで運用できる設計）
+// 1) LLM・有料APIは不使用（0円運用）。無料の株価データのみで毎日更新する
 // 2) 複合スコア上位4銘柄を毎日1000円ずつ仮想購入（セクター上限2・決算±3日回避・保有中も買い増しあり）、
 //    売却はATR連動トレーリングストップ（ATR14×3、8〜25%）と50日線割れのみ（保有期限なし）
 // 3) 対照実験: オルカン（eMAXIS Slim 全世界株式・投信協会CSVの基準価額）を毎日4000円仮想積立して比較
 // 4) ユニバースは日米の株式（時価総額上位）＋ETF（出来高上位）＋主要投資信託
 import fs from "node:fs";
 
-const API_KEY = process.env.ANTHROPIC_API_KEY;
-if (!API_KEY) throw new Error("ANTHROPIC_API_KEY がありません（リポジトリのSecretsに登録してください）");
 const FILE = "index.html";
 const PF_FILE = "portfolio.json";
 
@@ -22,150 +19,17 @@ const today = new Date().toLocaleDateString("ja-JP", {
 });
 const todayISO = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" }); // YYYY-MM-DD
 
-const prompt = `あなたは個人用株価ダッシュボードの「展望と考察」欄を毎朝更新する編集者です。ウェブ検索で最新情報を調べ、最後に指定のJSONだけを出力してください。
-
-今日の日付: ${today}（ISO表記: ${todayISO}）
-
-参考（現在の内容・情報が古い）:
-${cur[0].slice(0, 3500)}
-
-調べること:
-- 米国株（S&P500・NASDAQ100）の直近の動きと見通し、FRB・金利動向
-- 日経平均の直近の動きと見通し
-- 任天堂（東証7974）の直近の株価材料
-- SpaceX（NASDAQ:SPCX、2026/6/12上場）の直近の株価材料
-- 全世界株（MSCI ACWI／オルカン）に関わる大きな材料
-- 前日に±2%超の値動きがあった銘柄はその理由を詳しく
-
-品質基準（必ず守る）:
-- 各 outlook / note は2〜4文。株価水準・変化率・日付・目標値など具体的な数値を最低1つ含める
-- 検索で確認した事実のみ。あいまいな一般論だけの文章は不可
-- 数値は対象を取り違えない（S&P500とNASDAQ100の水準・目標値を混同しない等、桁が合っているか確認する）
-- 引用タグ（<cite>など）や出典マークは本文に入れない。使えるタグは<b>と<br>のみ
-- 絵文字・顔文字・装飾記号は一切使わない。淡々とした報告調の文体で書く
-- summary には「今日の注目イベント」と「前日の主な値動きと理由」を必ず入れる
-
-出力形式: 次のキーを持つJSONのみを出力（コードブロック記法は使わない。文字列内の改行は\\nでエスケープ）:
-{
- "asof": "YYYY/M/D（今日の日付）",
- "market": "マーケット全体の見通しHTML。<b>米国株:</b>…<br><b>日本株:</b>…<br><b>見方のコツ:</b>… の3段構成。使えるタグは<b>と<br>のみ",
- "items": {
-   "TSE:2559": {"outlook": "今後の展望", "note": "直近の値動きの考察（大変動があれば理由）"},
-   "FOREXCOM:SPXUSD": {"outlook": "...", "note": "..."},
-   "FOREXCOM:NSXUSD": {"outlook": "...", "note": "..."},
-   "FOREXCOM:JP225": {"outlook": "...", "note": "..."},
-   "TSE:7974": {"outlook": "...", "note": "..."},
-   "NASDAQ:SPCX": {"outlook": "...", "note": "..."}
- },
- "summary": "スマホ通知用の朝サマリー。プレーンテキスト3〜5行。今日の注目点・大きな値動きとその理由・今日の主要イベント"
-}
-
-制約: 投資助言はしない（事実とアナリスト見通しの紹介に留める）。各テキストは日本語。`;
-
-// ===== Claude API 呼び出し（pause_turn 継続ループ + 使用量ログ） =====
-// API障害・利用上限などで失敗しても、解説の更新だけをスキップして
-// 銘柄選定と積立シミュレーションは必ず実行する（catch節でフォールバック）。
+// ===== 解説生成は廃止（0円運用） =====
+// LLMは使わない。既存のANALYSISブロックの内容を引き継ぎ、picks（注目銘柄）だけを毎日更新する。
 let out = null;
-try {
-const messages = [{ role: "user", content: prompt }];
-let data;
-const usage = { in: 0, out: 0, searches: 0 };
-for (let turn = 0; turn < 8; turn++) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": API_KEY,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001", // コスト削減のためHaiku（Sonnetの約1/5）
-      max_tokens: 8000,
-      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }],
-      messages
-    })
-  });
-  if (!res.ok) throw new Error("Claude API エラー " + res.status + ": " + (await res.text()).slice(0, 500));
-  data = await res.json();
-  if (data.usage) {
-    usage.in += data.usage.input_tokens || 0;
-    usage.out += data.usage.output_tokens || 0;
-    usage.searches += (data.usage.server_tool_use && data.usage.server_tool_use.web_search_requests) || 0;
-  }
-  console.log("turn", turn, "stop_reason:", data.stop_reason, "usage:", JSON.stringify(data.usage));
-  if (data.stop_reason === "pause_turn" || data.stop_reason === "max_tokens") {
-    messages.push({ role: "assistant", content: data.content });
-    if (data.stop_reason === "max_tokens") {
-      messages.push({ role: "user", content: "続けて、指定のJSONのみを出力してください。" });
-    }
-    continue;
-  }
-  // ウェブ検索が一時的に使えずJSONが出せなかった場合は少し待って再試行（一過性障害対策）
-  const txt = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
-  if (!/\{[\s\S]*\}/.test(txt) && turn < 7) {
-    console.log("JSONなし（検索障害の可能性）→ 60秒待って再試行");
-    await new Promise(r => setTimeout(r, 60000));
-    messages.length = 0;
-    messages.push({ role: "user", content: prompt });
-    continue;
-  }
-  break;
-}
-// Haiku 4.5: 入力$1/M・出力$5/M、ウェブ検索$10/1000回
-const estCost = usage.in / 1e6 * 1 + usage.out / 1e6 * 5 + usage.searches * 0.01;
-console.log(`推定コスト: $${estCost.toFixed(4)} (入力${usage.in}tok / 出力${usage.out}tok / 検索${usage.searches}回)`);
-
-const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
-// 波括弧の対応を数えてJSONを正確に切り出す（前後に余計なテキストや波括弧があっても壊れない）。
-// 文字列内の生の改行・タブ等の制御文字はスペースに置換してからパース。
-function extractJSON(t) {
-  for (let i = t.indexOf("{"); i !== -1; i = t.indexOf("{", i + 1)) {
-    let depth = 0, inStr = false, esc = false;
-    for (let j = i; j < t.length; j++) {
-      const ch = t[j];
-      if (inStr) {
-        if (esc) esc = false;
-        else if (ch === "\\") esc = true;
-        else if (ch === '"') inStr = false;
-      } else if (ch === '"') inStr = true;
-      else if (ch === "{") depth++;
-      else if (ch === "}") {
-        depth--;
-        if (depth === 0) {
-          try { return JSON.parse(t.slice(i, j + 1).replace(/[\u0000-\u001F]+/g, " ")); } catch (e) { break; }
-        }
-      }
-    }
-  }
-  return null;
-}
-out = extractJSON(text);
-if (!out) throw new Error("JSONが見つかりません (stop_reason=" + data.stop_reason +
-  ", blocks=" + (data.content || []).map(b => b.type).join(",") + "): " + text.slice(0, 300));
-for (const k of ["asof", "market", "items", "summary"]) {
-  if (!(k in out)) throw new Error("キー不足: " + k);
-}
-// 引用タグ等の混入を除去（<b> <br> <a>以外のタグを削除）
-const cleanStr = v => typeof v === "string"
-  ? v.replace(/<(?!\/?(b|br|a)\b)[^>]*>/gi, "").replace(/\s{2,}/g, " ").trim()
-  : v;
-const deepClean = o => {
-  if (typeof o === "string") return cleanStr(o);
-  if (Array.isArray(o)) return o.map(deepClean);
-  if (o && typeof o === "object") { for (const k in o) o[k] = deepClean(o[k]); }
-  return o;
-};
-deepClean(out);
-} catch (e) {
-  console.log("解説の更新をスキップ（API失敗）:", e.message.slice(0, 300));
-  // 既存のANALYSISブロックから前回の内容を取り出して使い回す（picksは後で新しく選定し直す）
+{
   const om = cur[0].match(/const ANALYSIS = ([\s\S]*?);\s*\n\/\* ===== ANALYSIS_END/);
-  let old = null;
-  try { old = om ? JSON.parse(om[1]) : null; } catch (e2) {}
-  out = old || { asof: today, market: "", items: {} };
-  out.summary = today + " は解説の更新をスキップしました（Claude APIエラー）。銘柄選定と積立シミュレーションは通常どおり更新済み。";
+  try { out = om ? JSON.parse(om[1]) : null; } catch (e) {}
+  if (!out) out = { market: "", items: {} };
+  out.asof = today;
+  out.summary = today + " の注目銘柄と積立シミュレーションを更新しました。";
 }
-// ===== 注目個別株の選定（数値ベースの複合スコア。Haikuの判断は使わない） =====
+// ===== 注目個別株の選定（数値ベースの複合スコア） =====
 // 2000銘柄超のユニバースから複合スコア上位を選び、
 // ①決算発表±3日以内は回避 ②同一セクター最大2銘柄 の制約で4銘柄採用。
 const UA = "Mozilla/5.0";
