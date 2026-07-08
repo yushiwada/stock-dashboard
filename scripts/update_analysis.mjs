@@ -518,13 +518,21 @@ async function selectPicks() {
     const mc = d.marketCap || (u.etf ? (d.netAssets || 0) : 0), vol = d.averageDailyVolume3Month || d.regularMarketVolume || 0;
     const jpy = d.currency === "JPY";
     if (!u.etf && mc < (jpy ? 2e11 : 2e9)) continue; // 株式: 時価総額 約2000億円 / 20億ドル 以上
-    // レバレッジ・インバース型ETFは除外（値動きが増幅されモメンタム比較が不公平になるため）
-    if (u.etf && /([23]x|ultra|leveraged|inverse|daily target|ブル|ベア|レバレッジ|インバース|\bbull\b|\bbear\b)/i.test(u.name)) continue;
+    // インバース（ベア）型ETFは除外。ブル（レバレッジ）型は倍率でモメンタムを割って公平に比較
+    // （倍率調整により、同じ指数ならレバなし版よりも減価の分だけ自然に不利になる）
+    let lev = 1;
+    if (u.etf) {
+      const nm = u.name || "";
+      if (/(inverse|インバース|ベア|\bbear\b|\bshort\b|-1x)/i.test(nm)) continue;
+      if (/(3x|３倍|ultrapro)/i.test(nm)) lev = 3;
+      else if (/(2x|２倍|レバレッジ|\bultra\b|ブル|\bbull\b|leveraged)/i.test(nm)) lev = 2;
+    }
     if (price * vol < (jpy ? 1e9 : 1e7)) continue;   // 1日売買代金 約10億円 / 1000万ドル 以上
     cands.push({
-      name: u.name, symbol: u.symbol, sector: u.etf ? "ETF" : null, price, sma50: ma50, sma200: ma200,
-      posInRange: (price - lo) / (hi - lo), ret3m: price / ma50 - 1, ret6m: price / ma200 - 1, vol: null,
-      mcDisp: u.etf ? "ETF" : (jpy ? `時価総額${Math.round(mc / 1e8)}億円` : `時価総額${(mc / 1e9).toFixed(0)}十億ドル`)
+      name: u.name, symbol: u.symbol, sector: u.etf ? "ETF" : null, lev, price, sma50: ma50, sma200: ma200,
+      posInRange: (price - lo) / (hi - lo), ret3m: (price / ma50 - 1) / lev, ret6m: (price / ma200 - 1) / lev, vol: null,
+      mcDisp: u.etf ? (lev > 1 ? `ブル${lev}倍ETF（スコアは倍率で調整済み）` : "ETF")
+                    : (jpy ? `時価総額${Math.round(mc / 1e8)}億円` : `時価総額${(mc / 1e9).toFixed(0)}十億ドル`)
     });
   }
   // 投資信託を候補に追加（基準価額の履歴から同じ指標を計算）
