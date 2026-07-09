@@ -1,236 +1,76 @@
 {
-  "investedJPY": 16000,
+  "investedJPY": 4000,
   "realizedJPY": 0,
-  "valuationJPY": 15218.5,
+  "taxPaidJPY": 0,
   "open": [
     {
-      "symbol": "TSE:6976",
-      "name": "TAIYO YUDEN CO LTD",
-      "buyDate": "2026-07-06",
-      "units": 0.054392167527875984,
-      "buyPriceJPY": 18385,
-      "peakJPY": 18385,
+      "symbol": "TSE:2726",
+      "name": "PAL GROUP HOLDINGS CO LTD",
+      "sector": "Consumer Cyclical",
+      "buyDate": "2026-07-09",
+      "units": 0.6738544474393531,
+      "buyPriceJPY": 1484,
+      "peakJPY": 1484,
       "costJPY": 1000,
-      "curValueJPY": 814.8,
-      "trailPct": 25
+      "curValueJPY": 1000
     },
     {
-      "symbol": "TSE:285A",
-      "name": "KIOXIA HOLDINGS CORPORATION",
-      "buyDate": "2026-07-06",
-      "units": 0.012256403971074886,
-      "buyPriceJPY": 81590,
-      "peakJPY": 81590,
-      "costJPY": 1000,
-      "curValueJPY": 967.2,
-      "trailPct": 25
-    },
-    {
-      "symbol": "TSE:3436",
-      "name": "SUMCO CORPORATION",
-      "buyDate": "2026-07-06",
-      "units": 0.19338619222587508,
-      "buyPriceJPY": 5171,
-      "peakJPY": 5171,
-      "costJPY": 1000,
-      "curValueJPY": 902.3,
-      "trailPct": 25
-    },
-    {
-      "symbol": "NASDAQ:ALAB",
-      "name": "Astera Labs, Inc.",
-      "buyDate": "2026-07-06",
-      "units": 0.013707483406193497,
-      "buyPriceJPY": 72952.85,
-      "peakJPY": 72952.8514,
-      "costJPY": 1000,
-      "curValueJPY": 875.7,
-      "trailPct": 25
-    },
-    {
-      "symbol": "TSE:6976",
-      "name": "TAIYO YUDEN CO LTD",
+      "symbol": "NASDAQ:MU",
+      "name": "Micron Technology, Inc.",
       "sector": "Technology",
-      "buyDate": "2026-07-07",
-      "units": 0.054392167527875984,
-      "buyPriceJPY": 18385,
-      "peakJPY": 18385,
+      "buyDate": "2026-07-09",
+      "units": 0.006496239571170858,
+      "buyPriceJPY": 153935.21,
+      "peakJPY": 153935.20959999997,
       "costJPY": 1000,
-      "curValueJPY": 814.8,
-      "trailPct": 25
+      "curValueJPY": 1000
     },
     {
-      "symbol": "TSE:285A",
-      "name": "KIOXIA HOLDINGS CORPORATION",
-      "sector": "Technology",
-      "buyDate": "2026-07-07",
-      "units": 0.012256403971074886,
-      "buyPriceJPY": 81590,
-      "peakJPY": 81590,
-      "costJPY": 1000,
-      "curValueJPY": 967.2,
-      "trailPct": 25
-    },
-    {
-      "symbol": "NASDAQ:MRNA",
-      "name": "Moderna, Inc.",
-      "sector": "Healthcare",
-      "buyDate": "2026-07-07",
-      "units": 0.07542347718038563,
-      "buyPriceJPY": 13258.47,
-      "peakJPY": 13258.8802,
-      "costJPY": 1000,
-      "curValueJPY": 904.5,
-      "trailPct": 25
-    },
-    {
-      "symbol": "TSE:6101",
-      "name": "TSUGAMI CORP",
+      "symbol": "NASDAQ:TRI",
+      "name": "Thomson Reuters Corp",
       "sector": "Industrials",
-      "buyDate": "2026-07-07",
-      "units": 0.12345679012345678,
-      "buyPriceJPY": 8100,
-      "peakJPY": 8100,
+      "buyDate": "2026-07-09",
+      "units": 0.06933999443274733,
+      "buyPriceJPY": 14421.69,
+      "peakJPY": 14421.691379999998,
       "costJPY": 1000,
-      "curValueJPY": 887.7,
-      "trailPct": 23.2
-    },
-    {
-      "symbol": "NASDAQ:DLLL",
-      "name": "GraniteShares 2x Long DELL Dail",
-      "sector": null,
-      "buyDate": "2026-07-08",
-      "units": 0.26696297136023384,
-      "buyPriceJPY": 3745.84,
-      "peakJPY": 4021.6769999999997,
-      "costJPY": 1000,
-      "curValueJPY": 1073.6,
-      "trailPct": 25
-    },
-    {
-      "symbol": "TSE:6976",
-      "name": "TAIYO YUDEN CO LTD",
-      "sector": "Technology",
-      "buyDate": "2026-07-08",
-      "units": 0.06114338122898196,
-      "buyPriceJPY": 16355,
-      "peakJPY": 16770,
-      "costJPY": 1000,
-      "curValueJPY": 915.9,
-      "trailPct": 25
-    },
-    {
-      "symbol": "TSE:285A",
-      "name": "KIOXIA HOLDINGS CORPORATION",
-      "sector": "Technology",
-      "buyDate": "2026-07-08",
-      "units": 0.013812154696132596,
-      "buyPriceJPY": 72400,
-      "peakJPY": 78910,
-      "costJPY": 1000,
-      "curValueJPY": 1089.9,
-      "trailPct": 25
-    },
-    {
-      "symbol": "NASDAQ:AMDL",
-      "name": "GraniteShares 2x Long AMD Daily",
-      "sector": null,
-      "buyDate": "2026-07-08",
-      "units": 0.09598855552257667,
-      "buyPriceJPY": 10417.91,
-      "peakJPY": 10469.35956,
-      "costJPY": 1000,
-      "curValueJPY": 1004.9,
-      "trailPct": 25
+      "curValueJPY": 1000
     },
     {
       "symbol": "TSE:285A",
       "name": "KIOXIA HOLDINGS CORPORATION",
       "sector": "Technology",
       "buyDate": "2026-07-09",
-      "units": 0.012672665061462425,
-      "buyPriceJPY": 78910,
-      "peakJPY": 78910,
-      "costJPY": 1000,
-      "curValueJPY": 1000
-    },
-    {
-      "symbol": "TSE:6976",
-      "name": "TAIYO YUDEN CO LTD",
-      "sector": "Technology",
-      "buyDate": "2026-07-09",
-      "units": 0.06675567423230974,
-      "buyPriceJPY": 14980,
-      "peakJPY": 14980,
-      "costJPY": 1000,
-      "curValueJPY": 1000
-    },
-    {
-      "symbol": "NASDAQ:DLLL",
-      "name": "GraniteShares 2x Long DELL Dail",
-      "sector": "ETF",
-      "buyDate": "2026-07-09",
-      "units": 0.2486524899936022,
-      "buyPriceJPY": 4021.68,
-      "peakJPY": 4021.6769999999997,
-      "costJPY": 1000,
-      "curValueJPY": 1000
-    },
-    {
-      "symbol": "NASDAQ:MRNA",
-      "name": "Moderna, Inc.",
-      "sector": "Healthcare",
-      "buyDate": "2026-07-09",
-      "units": 0.08338955457102512,
-      "buyPriceJPY": 11991.91,
-      "peakJPY": 11991.909599999999,
+      "units": 0.012799180852425445,
+      "buyPriceJPY": 78130,
+      "peakJPY": 78130,
       "costJPY": 1000,
       "curValueJPY": 1000
     }
   ],
   "closed": [],
   "lastBuyDate": "2026-07-09",
-  "updated": "2026-07-09",
+  "cashJPY": 0,
   "benchmark": {
     "symbol": "FUND:0331418A",
     "name": "オルカン（eMAXIS Slim 全世界株式）",
-    "investedJPY": 16000,
-    "units": 0.41573328244134067,
+    "investedJPY": 4000,
+    "units": 0.10444136922635056,
     "lastBuyDate": "2026-07-09",
-    "startDate": "2026-07-06",
+    "startDate": "2026-07-09",
     "lastPriceJPY": 38299,
     "navDate": "2026-07-08",
-    "valuationJPY": 15922.2
+    "valuationJPY": 4000
   },
+  "valuationJPY": 4000,
+  "updated": "2026-07-09",
   "history": [
     {
-      "date": "2026-07-06",
+      "date": "2026-07-09",
       "inv": 4000,
-      "val": 3994.6,
+      "val": 4000,
       "bInv": 4000,
       "bVal": 4000
-    },
-    {
-      "date": "2026-07-07",
-      "inv": 8000,
-      "val": 7297.1,
-      "bInv": 8000,
-      "bVal": 7994.7
-    },
-    {
-      "date": "2026-07-08",
-      "inv": 12000,
-      "val": 11089,
-      "bInv": 12000,
-      "bVal": 11994.7
-    },
-    {
-      "date": "2026-07-09",
-      "inv": 16000,
-      "val": 15218.5,
-      "bInv": 16000,
-      "bVal": 15922.2
     }
-  ],
-  "cashJPY": 0
+  ]
 }
