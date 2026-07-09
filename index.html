@@ -932,7 +932,7 @@ async function fillPortfolio() {
       <span style="font-size:16px">ピック戦略: 累計投資額 <b style="color:var(--text)">${fmt(pf.investedJPY)}円</b> ／
       評価額 <b style="color:var(--text)">${fmt(pf.valuationJPY)}円</b> ／
       損益 <b style="color:${col}">${pl >= 0 ? "+" : ""}${fmt(pl)}円（${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%）</b></span>
-      <span style="font-size:11px">（評価額＝保有中の現在価値＋待機資金${fmt(pf.cashJPY || 0)}円。${pf.updated} 時点）</span>`;
+      <span style="font-size:11px">（評価額＝保有中の現在価値＋待機資金${fmt(pf.cashJPY || 0)}円${pf.taxPaidJPY ? `／うち売却益への課税(20.315%)で累計 ${fmt(pf.taxPaidJPY)}円 納税` : ""}。${pf.updated} 時点）</span>`;
     if (pf.benchmark && pf.benchmark.investedJPY) {
       const b = pf.benchmark;
       const bval = b.valuationJPY || 0;
@@ -946,7 +946,7 @@ async function fillPortfolio() {
         損益 <b style="color:${bcol}">${bpl >= 0 ? "+" : ""}${fmt(bpl)}円（${bpct >= 0 ? "+" : ""}${bpct.toFixed(1)}%）</b></span><br>
         <b>差: <span style="color:${dcol}">${diff >= 0 ? "+" : ""}${diff.toFixed(1)}ポイント</span></b>
         <span style="font-size:11px">（${b.startDate || ""}開始・損益率で比較）</span>
-        <details style="margin-top:6px"><summary style="cursor:pointer;color:var(--accent);font-size:12px">売買ルール</summary><div style="margin-top:4px;font-size:12px">買い: 複合スコア上位4銘柄（同一セクター最大2・決算発表±3日は見送り・保有中も買い増しあり）。売り: 高値からその銘柄の平均日次変動幅（ATR14）×3倍の下落（8〜25%）、または50日移動平均線割れ。保有期限なし。</div></details>`;
+        <details style="margin-top:6px"><summary style="cursor:pointer;color:var(--accent);font-size:12px">売買ルール</summary><div style="margin-top:4px;font-size:12px">買い: 7因子の複合スコア上位（モメンタム・トレンド・アナリスト目標余地・レーティング・割安度・低ボラ・クオリティ〈ROE/利益率/低負債〉）。上位候補だけ全指標を再取得して本採点し、保有中を含む累計で同一セクター最大2・同一銘柄1・決算発表±3日は見送り。売り: 高値からその銘柄の平均日次変動幅（ATR14）×3倍の下落（12〜28%）のトレーリングストップのみ（50日線割れ売りは廃止）。保有期限なし。売却益には20.315%課税。</div></details>`;
     }
     if (pf.open && pf.open.length) {
       const winners = pf.open.filter(p => (p.curValueJPY != null ? p.curValueJPY : p.costJPY) >= p.costJPY).length;
