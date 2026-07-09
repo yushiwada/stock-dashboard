@@ -214,7 +214,11 @@ function zscores(arr) {
   const sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length) || 1;
   return arr.map(x => (x != null && isFinite(x)) ? (x - m) / sd : null);
 }
-const WEIGHTS = { momentum: 0.12, trend: 0.10, analystUp: 0.15, rating: 0.08, value: 0.20, lowVol: 0.15, quality: 0.20 };
+const WEIGHTS = { momentum: 0.12, trend: 0.10, analystUp: 0.15, rating: 0.08, value: 0.23, lowVol: 0.10, quality: 0.22 };
+// 低ボラ因子の下限: これ未満の日次ボラ（債券・現金同等ETF等）は同じ扱いにし、"低ボラなだけ"で突出させない
+const VOL_FLOOR = 0.012;
+// これ未満の日次ボラは株ではあり得ない（債券・現金同等）とみなし、注目銘柄から除外する定量ガード
+const VOL_MIN = 0.005;
 const isFinancial = c => /金融|Financial/i.test(c.sectorName || c.sector || "");
 function scoreAndSelect(cands, opts) {
   const maxPerSector = (opts && opts.maxPerSector) || 2;
@@ -222,7 +226,7 @@ function scoreAndSelect(cands, opts) {
   const mom = cands.map(c => (c.ret3m != null && c.ret6m != null) ? 0.5 * c.ret3m + 0.5 * c.ret6m : null);
   const up = cands.map(c => c.analystUp != null ? c.analystUp : null);
   const val = cands.map(c => c.posInRange != null ? (1 - c.posInRange) : null);
-  const vol = cands.map(c => c.vol != null ? c.vol : null);
+  const vol = cands.map(c => c.vol != null ? Math.max(c.vol, VOL_FLOOR) : null);
   const rating = cands.map(c => c.recMean != null ? (3 - c.recMean) : null);
   // クオリティ因子: ROE高・利益率高・低負債（銀行等の金融は本質的に高レバなので負債は使わない）
   const zRoe = zscores(cands.map(c => c.roe != null ? c.roe : null));
@@ -396,6 +400,7 @@ async function adoptWithConstraints(ranked) {
     if (c.earningsInDays != null && c.earningsInDays >= -1 && c.earningsInDays <= 3) {
       console.log("決算近接でスキップ:", c.name, `(${c.earningsInDays}日後)`); continue;
     }
+    if (c.vol != null && c.vol < VOL_MIN) { console.log("低ボラ過ぎ(債券/現金相当)でスキップ:", c.name, `(${(c.vol*100).toFixed(2)}%/日)`); continue; }
     if ((symCount[c.symbol] || 0) >= MAX_PER_SYMBOL) { console.log("同一銘柄上限:", c.name); continue; }
     const b = sectorBucket(c.sectorName || c.sector);
     if ((secCount[b] || 0) >= MAX_PER_SECTOR) { console.log("セクター上限でスキップ:", c.name, `(${b})`); continue; }
@@ -438,6 +443,10 @@ async function selectPicks() {
     if (u.etf) {
       const nm = u.name || "";
       if (/(inverse|インバース|ベア|\bbear\b|\bshort\b|-1x)/i.test(nm)) continue;
+      // 債券・国債・現金同等（マネーマーケット等）ETFは株の「注目銘柄」に馴染まないため除外。
+      // スクリーナーの銘柄名は途中で切れることがある（"...Investment Gra"）ので、満期レンジ表記や
+      // "investment gra"/"corporate" 等の断片でも拾えるようにする。
+      if (/bond|treasury|t-bill|gilt|bund|\bjgb\b|municipal|aggregate|fixed income|money market|ultrashort|\btips\b|investment gra|corporate|\d\s*[-–]\s*\d+\s*year|\d+\s*\+\s*year|債券|国債|公社債/i.test(nm)) continue;
       if (/(3x|３倍|ultrapro)/i.test(nm)) lev = 3;
       else if (/(2x|２倍|レバレッジ|\bultra\b|ブル|\bbull\b|leveraged)/i.test(nm)) lev = 2;
     }
