@@ -1,7 +1,7 @@
 // 毎朝の「展望と考察」自動更新スクリプト（GitHub Actionsで実行）
 // 1) LLM・有料APIは不使用（0円運用）。無料の株価データのみで毎日更新する
-// 2) 毎日4000円＋売却代金を再投資（1000円=1ロット）で複合スコア上位に配分（セクター上限2・決算±3日回避・買い増しあり）、
-//    売却はATR連動トレーリングストップ（ATR14×3、8〜25%）と50日線割れのみ（保有期限なし）
+// 2) 積立4000円は毎日待機資金へ、購入は週1回まとめて複合スコア上位に配分（セクター評価額35%・単一銘柄15%以内・決算±3日回避・買い増しあり）、
+//    売却は暴落ストップ（ピーク比-35%固定・毎日判定）と分散トリム（月1回）のみ（保有期限なし）
 // 3) 対照実験: オルカン（eMAXIS Slim 全世界株式・投信協会CSVの基準価額）を毎日4000円仮想積立して比較
 // 4) ユニバースは日米の株式（時価総額上位）＋ETF（出来高上位）＋主要投資信託
 import fs from "node:fs";
@@ -342,7 +342,9 @@ function zscores(arr) {
   const sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length) || 1;
   return arr.map(x => (x != null && isFinite(x)) ? (x - m) / sd : null);
 }
-const WEIGHTS = { momentum: 0.12, trend: 0.10, analystUp: 0.15, rating: 0.08, value: 0.23, lowVol: 0.10, quality: 0.22 };
+// バックテスト(2024-05〜2026-07・独立半期OOS)で、価格因子はvalue/lowVol偏重→momentum/trend寄りが前後半とも指数超え、
+// value/lowVol偏重は両半期で指数負けと判明。中庸傾斜としてmomentum/trendを増やしvalue/lowVol/quality/ratingを削減。
+const WEIGHTS = { momentum: 0.20, trend: 0.15, analystUp: 0.15, rating: 0.05, value: 0.16, lowVol: 0.11, quality: 0.18 };
 // 低ボラ因子の下限: これ未満の日次ボラ（債券・現金同等ETF等）は同じ扱いにし、"低ボラなだけ"で突出させない
 const VOL_FLOOR = 0.012;
 // これ未満の日次ボラは株ではあり得ない（債券・現金同等）とみなし、注目銘柄から除外する定量ガード
@@ -458,7 +460,7 @@ function buildRisk(c) {
     /公益|Utilit/i.test(secText) ? "金利敏感（債券代替）で金利上昇に弱い" :
     /自動車/i.test(secText) ? "為替・EV競争・関税の影響を受けやすい" : null;
   if (secRisk) b.push(secRisk);
-  const generic = ["トレンド転換時はATRトレーリングで撤退する想定", "相場全体の急変には勝てない点に留意"];
+  const generic = ["ピーク比-35%の暴落ストップで大崩れは限定する想定", "相場全体の急変には勝てない点に留意"];
   if (!(c.symbol || "").startsWith("TSE:")) generic.push("円高は円建て評価の逆風"); // 米国株のみ
   b.push(variant(generic, seed + "z"));
   return b.join("。") + "。";
@@ -691,12 +693,6 @@ try {
     try { priceJPY[s] = await toJPY(await yQuote(s)); } catch (e) { console.log("価格取得失敗:", s, e.message); }
   }
 
-  // 保有銘柄の売却判定用データ（50日線・ATR）を取得
-  const met = {};
-  for (const pos of pf.open) {
-    try { const m = await chartMetrics(pos.symbol); if (m) met[pos.symbol] = m; await sleep(120); } catch (e) {}
-  }
-
   const TAX_RATE = 0.20315; // 譲渡益・配当への課税（所得税15%＋復興0.315%＋住民5%）
   const COST_RATE = 0.002;  // 売買コスト（片道0.2%：手数料＋為替スプレッド相当）
 
@@ -736,7 +732,7 @@ try {
     pos.actionsThru = todayISO;
   }
 
-  // ===== 売却判定（毎日）: ①ATRトレーリングストップ ②分散トリム =====
+  // ===== 売却判定: ①暴落ストップ(ピーク比-35%・毎日) ②分散トリム(月1回) =====
   const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
   // 部分/全部売却の共通処理: 手数料・税を計上し closed に記録、pos の units/cost を減らす。全部売れたら true。
   const realizeSell = (pos, pj, sellUnits, reason) => {
@@ -761,23 +757,25 @@ try {
     return pos.units <= 1e-9;
   };
 
-  // ① ボラ連動トレーリングストップ（ピーク比 -(ATR14×3)、12〜28%クランプ、ATR不明時-15%。破綻級の暴落を防ぐ）
+  // ① 暴落限定ストップ（ピーク比 -35%固定）。日次ATRトレーリング(12〜28%)はバックテストで上昇相場の
+  //    「押し目売り→高値買い直し→課税」whipsawがnet有害(費用の大半)と判明したため、大暴落だけ拾う広い固定%に置換。
+  const HARD_STOP = 0.35;
   let still = [];
   for (const pos of pf.open) {
     const pj = priceJPY[pos.symbol];
     if (pj == null) { still.push(pos); continue; } // 価格が取れない日は保有継続
     pos.peakJPY = Math.max(pos.peakJPY || pos.buyPriceJPY, pj);
-    const m = met[pos.symbol];
-    const trailPct = (m && m.atrRatio) ? clamp(3 * m.atrRatio, 0.12, 0.28) : 0.15;
-    pos.trailPct = Math.round(trailPct * 1000) / 10; // 表示用(%)
-    if (pj <= pos.peakJPY * (1 - trailPct)) realizeSell(pos, pj, pos.units, `トレーリングストップ(ピーク比-${pos.trailPct}%)`);
+    pos.trailPct = HARD_STOP * 100; // 表示用(%)
+    if (pj <= pos.peakJPY * (1 - HARD_STOP)) realizeSell(pos, pj, pos.units, `暴落ストップ(ピーク比-${pos.trailPct}%)`);
     else still.push(pos);
   }
   pf.open = still;
 
-  // ② 分散トリム: 値上がりで肥大化した銘柄/セクターを上限まで一部利確（35%/15%の分散を恒常的に維持）
-  // （旧③スコア悪化エグジット＝候補分布下位20%で売却、はバックテストで税・手数料増による net-negative と判明したため撤去）
-  {
+  // ② 分散トリム（月1回）: 値上がりで肥大化した銘柄/セクターを上限まで一部利確（35%/15%の分散を維持）。
+  // バックテストで日次トリムより月次の方が税・手数料が減りDDは同等と判明。旧③スコア悪化エグジットは撤去済み。
+  const doTrim = (pf.lastTrimMonth !== todayISO.slice(0, 7));
+  if (doTrim) pf.lastTrimMonth = todayISO.slice(0, 7);
+  if (doTrim) {
     const NAME_HARD = 0.20, NAME_TGT = 0.15, SECTOR_HARD = 0.45, SECTOR_TGT = 0.40, DIVERSIFY_BASE = 20000;
     const cvOf = p => { const pj = priceJPY[p.symbol]; return pj != null ? p.units * pj : 0; };
     const priced = () => pf.open.filter(p => priceJPY[p.symbol] != null);
@@ -806,13 +804,20 @@ try {
   }
   pf.open = pf.open.filter(p => p.units > 1e-9); // 端数で0になったポジションを除去
 
-  // ===== 当日の仮想購入（新規4000円＋売却/配当の現金を再投資。1000円=1ロット、1日1回のみ）=====
-  // 分散はセクター評価額シェア≤35%・単一銘柄≤15%で制御。規模が小さいうちは DIVERSIFY_BASE で緩和。
-  // 配分は2段階: ①まず1銘柄1ロットずつ分散 → ②残ロットを上限内で買い増し。→ 現金滞留せず毎日投下できる。
+  // ===== 積立（毎日）と仮想購入（週1回）=====
+  // 積立4000円は毎日、待機資金へ加算（ベンチのオルカンも毎日4000円積立なので同条件）。
+  // 購入は週1回、貯まった待機資金をまとめて配分。バックテストで、日次でスコア上位を追い続けるより
+  // 週次でまとめ買う方が高値掴み・即トリムのchurnが減り、買い曜日に依らず安定して優位と判明したため。
+  if (pf.lastContribDate !== todayISO) {
+    pf.cashJPY = Math.round(((pf.cashJPY || 0) + 4000) * 10) / 10;
+    pf.investedJPY += 4000;                      // 新規入金分のみ（毎日計上・再投資分は二重計上しない）
+    pf.lastContribDate = todayISO;
+  }
   let boughtToday = null;
-  if (pf.lastBuyDate !== todayISO) {
+  const daysSinceBuy = pf.lastBuyDate ? (new Date(todayISO) - new Date(pf.lastBuyDate)) / 86400000 : 999;
+  if (daysSinceBuy >= 7 && pf.lastBuyDate !== todayISO) {  // 前回買付から7日以上＝週1回。休みで飛んでも次の実行日にまとめて投下
     const LOT = 1000, SECTOR_CAP = 0.35, NAME_CAP = 0.15, DIVERSIFY_BASE = 20000;
-    let cash = 4000 + (pf.cashJPY || 0);
+    let cash = (pf.cashJPY || 0);                // 4000は上の積立で加算済み
     const curVal = p => { const pj = priceJPY[p.symbol]; return pj != null ? p.units * pj : p.costJPY; };
     let total = pf.open.reduce((s, p) => s + curVal(p), 0);
     const secVal = {}, symVal = {};
@@ -847,8 +852,7 @@ try {
       });
       console.log("購入:", p.name, amt + "円", `(コスト${fee}円)`);
     }
-    pf.investedJPY += 4000;                      // 新規入金分のみ（再投資分は二重計上しない）
-    pf.cashJPY = Math.round(cash * 10) / 10;     // 上限で置けなかった分・端数は待機資金として翌日へ繰越
+    pf.cashJPY = Math.round(cash * 10) / 10;     // 上限で置けなかった分・端数は待機資金として翌週へ繰越
     pf.lastBuyDate = todayISO;
     boughtToday = alloc;
   }
