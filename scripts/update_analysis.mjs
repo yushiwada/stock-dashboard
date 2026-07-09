@@ -34,17 +34,26 @@ let out = null;
 // ①決算発表±3日以内は回避 ②同一セクター最大2銘柄 の制約で4銘柄採用。
 const UA = "Mozilla/5.0";
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+// スクリーナー取得が失敗した時のフォールバック用ユニバース（約130銘柄・全セクター）。
 const UNIVERSE = [
+  // 半導体
   { name: "エヌビディア", symbol: "NASDAQ:NVDA", sector: "半導体" },
   { name: "ブロードコム", symbol: "NASDAQ:AVGO", sector: "半導体" },
   { name: "AMD", symbol: "NASDAQ:AMD", sector: "半導体" },
   { name: "マイクロン", symbol: "NASDAQ:MU", sector: "半導体" },
   { name: "クアルコム", symbol: "NASDAQ:QCOM", sector: "半導体" },
+  { name: "テキサス・インスツルメンツ", symbol: "NASDAQ:TXN", sector: "半導体" },
+  { name: "インテル", symbol: "NASDAQ:INTC", sector: "半導体" },
+  { name: "ASML", symbol: "NASDAQ:ASML", sector: "半導体" },
+  { name: "アプライドマテリアルズ", symbol: "NASDAQ:AMAT", sector: "半導体" },
   { name: "東京エレクトロン", symbol: "TSE:8035", sector: "半導体" },
   { name: "アドバンテスト", symbol: "TSE:6857", sector: "半導体" },
   { name: "レーザーテック", symbol: "TSE:6920", sector: "半導体" },
   { name: "ディスコ", symbol: "TSE:6146", sector: "半導体" },
   { name: "キオクシア", symbol: "TSE:285A", sector: "半導体" },
+  { name: "ローム", symbol: "TSE:6963", sector: "半導体" },
+  { name: "村田製作所", symbol: "TSE:6981", sector: "半導体" },
+  // テック
   { name: "アップル", symbol: "NASDAQ:AAPL", sector: "テック" },
   { name: "マイクロソフト", symbol: "NASDAQ:MSFT", sector: "テック" },
   { name: "アルファベット", symbol: "NASDAQ:GOOGL", sector: "テック" },
@@ -53,24 +62,127 @@ const UNIVERSE = [
   { name: "ネットフリックス", symbol: "NASDAQ:NFLX", sector: "テック" },
   { name: "オラクル", symbol: "NYSE:ORCL", sector: "テック" },
   { name: "パランティア", symbol: "NASDAQ:PLTR", sector: "テック" },
+  { name: "セールスフォース", symbol: "NYSE:CRM", sector: "テック" },
+  { name: "アドビ", symbol: "NASDAQ:ADBE", sector: "テック" },
+  { name: "シスコシステムズ", symbol: "NASDAQ:CSCO", sector: "テック" },
+  { name: "IBM", symbol: "NYSE:IBM", sector: "テック" },
+  { name: "サービスナウ", symbol: "NYSE:NOW", sector: "テック" },
+  { name: "インテュイット", symbol: "NASDAQ:INTU", sector: "テック" },
+  { name: "ソニーグループ", symbol: "TSE:6758", sector: "テック" },
+  { name: "ソフトバンクグループ", symbol: "TSE:9984", sector: "テック" },
+  { name: "日立製作所", symbol: "TSE:6501", sector: "テック" },
+  { name: "富士通", symbol: "TSE:6702", sector: "テック" },
+  { name: "リクルート", symbol: "TSE:6098", sector: "テック" },
+  { name: "キーエンス", symbol: "TSE:6861", sector: "テック" },
+  // 通信
+  { name: "AT&T", symbol: "NYSE:T", sector: "通信" },
+  { name: "ベライゾン", symbol: "NYSE:VZ", sector: "通信" },
+  { name: "Tモバイル", symbol: "NASDAQ:TMUS", sector: "通信" },
+  { name: "NTT", symbol: "TSE:9432", sector: "通信" },
+  { name: "KDDI", symbol: "TSE:9433", sector: "通信" },
+  { name: "ソフトバンク", symbol: "TSE:9434", sector: "通信" },
+  // 自動車
   { name: "テスラ", symbol: "NASDAQ:TSLA", sector: "自動車" },
+  { name: "GM", symbol: "NYSE:GM", sector: "自動車" },
+  { name: "フォード", symbol: "NYSE:F", sector: "自動車" },
   { name: "トヨタ自動車", symbol: "TSE:7203", sector: "自動車" },
+  { name: "ホンダ", symbol: "TSE:7267", sector: "自動車" },
+  { name: "日産自動車", symbol: "TSE:7201", sector: "自動車" },
+  { name: "スズキ", symbol: "TSE:7269", sector: "自動車" },
+  { name: "SUBARU", symbol: "TSE:7270", sector: "自動車" },
+  // 金融
   { name: "JPモルガン", symbol: "NYSE:JPM", sector: "金融" },
   { name: "バンク・オブ・アメリカ", symbol: "NYSE:BAC", sector: "金融" },
   { name: "ビザ", symbol: "NYSE:V", sector: "金融" },
+  { name: "マスターカード", symbol: "NYSE:MA", sector: "金融" },
+  { name: "ウェルズ・ファーゴ", symbol: "NYSE:WFC", sector: "金融" },
+  { name: "ゴールドマン・サックス", symbol: "NYSE:GS", sector: "金融" },
+  { name: "モルガン・スタンレー", symbol: "NYSE:MS", sector: "金融" },
+  { name: "アメックス", symbol: "NYSE:AXP", sector: "金融" },
   { name: "三菱UFJ", symbol: "TSE:8306", sector: "金融" },
   { name: "三井住友FG", symbol: "TSE:8316", sector: "金融" },
+  { name: "みずほFG", symbol: "TSE:8411", sector: "金融" },
+  { name: "オリックス", symbol: "TSE:8591", sector: "金融" },
+  { name: "東京海上HD", symbol: "TSE:8766", sector: "金融" },
+  // ヘルスケア
   { name: "イーライリリー", symbol: "NYSE:LLY", sector: "ヘルスケア" },
   { name: "ユナイテッドヘルス", symbol: "NYSE:UNH", sector: "ヘルスケア" },
+  { name: "ジョンソン&ジョンソン", symbol: "NYSE:JNJ", sector: "ヘルスケア" },
+  { name: "メルク", symbol: "NYSE:MRK", sector: "ヘルスケア" },
+  { name: "アッヴィ", symbol: "NYSE:ABBV", sector: "ヘルスケア" },
+  { name: "ファイザー", symbol: "NYSE:PFE", sector: "ヘルスケア" },
+  { name: "サーモフィッシャー", symbol: "NYSE:TMO", sector: "ヘルスケア" },
+  { name: "アボット", symbol: "NYSE:ABT", sector: "ヘルスケア" },
   { name: "第一三共", symbol: "TSE:4568", sector: "ヘルスケア" },
-  { name: "ウォルマート", symbol: "NYSE:WMT", sector: "消費" },
-  { name: "コストコ", symbol: "NASDAQ:COST", sector: "消費" },
+  { name: "武田薬品", symbol: "TSE:4502", sector: "ヘルスケア" },
+  { name: "中外製薬", symbol: "TSE:4519", sector: "ヘルスケア" },
+  { name: "シスメックス", symbol: "TSE:6869", sector: "ヘルスケア" },
+  // 生活必需
+  { name: "P&G", symbol: "NYSE:PG", sector: "生活必需" },
+  { name: "コカ・コーラ", symbol: "NYSE:KO", sector: "生活必需" },
+  { name: "ペプシコ", symbol: "NASDAQ:PEP", sector: "生活必需" },
+  { name: "モンデリーズ", symbol: "NASDAQ:MDLZ", sector: "生活必需" },
+  { name: "コルゲート", symbol: "NYSE:CL", sector: "生活必需" },
+  { name: "ウォルマート", symbol: "NYSE:WMT", sector: "生活必需" },
+  { name: "コストコ", symbol: "NASDAQ:COST", sector: "生活必需" },
+  { name: "JT", symbol: "TSE:2914", sector: "生活必需" },
+  { name: "味の素", symbol: "TSE:2802", sector: "生活必需" },
+  { name: "アサヒGHD", symbol: "TSE:2502", sector: "生活必需" },
+  { name: "セブン&アイ", symbol: "TSE:3382", sector: "生活必需" },
+  // 消費（一般消費財）
+  { name: "マクドナルド", symbol: "NYSE:MCD", sector: "消費" },
+  { name: "ナイキ", symbol: "NYSE:NKE", sector: "消費" },
+  { name: "スターバックス", symbol: "NASDAQ:SBUX", sector: "消費" },
+  { name: "ホーム・デポ", symbol: "NYSE:HD", sector: "消費" },
+  { name: "ロウズ", symbol: "NYSE:LOW", sector: "消費" },
+  { name: "ブッキング", symbol: "NASDAQ:BKNG", sector: "消費" },
   { name: "任天堂", symbol: "TSE:7974", sector: "消費" },
   { name: "ファーストリテイリング", symbol: "TSE:9983", sector: "消費" },
+  { name: "ZOZO", symbol: "TSE:3092", sector: "消費" },
+  { name: "イオン", symbol: "TSE:8267", sector: "消費" },
+  // 資本財
+  { name: "キャタピラー", symbol: "NYSE:CAT", sector: "資本財" },
+  { name: "ハネウェル", symbol: "NASDAQ:HON", sector: "資本財" },
+  { name: "GEエアロスペース", symbol: "NYSE:GE", sector: "資本財" },
+  { name: "ボーイング", symbol: "NYSE:BA", sector: "資本財" },
+  { name: "UPS", symbol: "NYSE:UPS", sector: "資本財" },
+  { name: "RTX", symbol: "NYSE:RTX", sector: "資本財" },
+  { name: "ロッキード・マーチン", symbol: "NYSE:LMT", sector: "資本財" },
+  { name: "ディア", symbol: "NYSE:DE", sector: "資本財" },
+  { name: "コマツ", symbol: "TSE:6301", sector: "資本財" },
+  { name: "ダイキン工業", symbol: "TSE:6367", sector: "資本財" },
+  { name: "三菱重工業", symbol: "TSE:7011", sector: "資本財" },
+  { name: "ファナック", symbol: "TSE:6954", sector: "資本財" },
+  { name: "SMC", symbol: "TSE:6273", sector: "資本財" },
+  // エネルギー
   { name: "エクソンモービル", symbol: "NYSE:XOM", sector: "エネルギー" },
+  { name: "シェブロン", symbol: "NYSE:CVX", sector: "エネルギー" },
+  { name: "コノコフィリップス", symbol: "NYSE:COP", sector: "エネルギー" },
+  { name: "INPEX", symbol: "TSE:1605", sector: "エネルギー" },
+  { name: "ENEOS HD", symbol: "TSE:5020", sector: "エネルギー" },
+  // 素材
+  { name: "リンデ", symbol: "NASDAQ:LIN", sector: "素材" },
+  { name: "シャーウィン・ウィリアムズ", symbol: "NYSE:SHW", sector: "素材" },
+  { name: "信越化学", symbol: "TSE:4063", sector: "素材" },
+  { name: "日本製鉄", symbol: "TSE:5401", sector: "素材" },
+  // 公益
+  { name: "ネクステラ", symbol: "NYSE:NEE", sector: "公益" },
+  { name: "デューク・エナジー", symbol: "NYSE:DUK", sector: "公益" },
+  { name: "サザン", symbol: "NYSE:SO", sector: "公益" },
+  // 不動産
+  { name: "プロロジス", symbol: "NYSE:PLD", sector: "不動産" },
+  { name: "アメリカン・タワー", symbol: "NYSE:AMT", sector: "不動産" },
+  { name: "エクイニクス", symbol: "NASDAQ:EQIX", sector: "不動産" },
+  { name: "三井不動産", symbol: "TSE:8801", sector: "不動産" },
+  { name: "三菱地所", symbol: "TSE:8802", sector: "不動産" },
+  // 商社
   { name: "伊藤忠商事", symbol: "TSE:8001", sector: "商社" },
   { name: "三菱商事", symbol: "TSE:8058", sector: "商社" },
-  { name: "半導体ETF(SMH)", symbol: "NASDAQ:SMH", sector: "ETF" }
+  { name: "三井物産", symbol: "TSE:8031", sector: "商社" },
+  { name: "住友商事", symbol: "TSE:8053", sector: "商社" },
+  // ETF
+  { name: "半導体ETF(SMH)", symbol: "NASDAQ:SMH", sector: "ETF" },
+  { name: "ナスダック100(QQQ)", symbol: "NASDAQ:QQQ", sector: "ETF" }
 ];
 const toYahoo = sym => sym.startsWith("TSE:") ? sym.slice(4) + ".T" : sym.split(":")[1];
 // ===== 投資信託: 投信協会の公式CSV（日次基準価額・全履歴）から取得 =====
@@ -282,28 +394,74 @@ function scoreAndSelect(cands, opts) {
   return picked;
 }
 const pct = x => (x >= 0 ? "+" : "") + (x * 100).toFixed(0) + "%";
+// 銘柄シンボル＋日付から決定的に言い回しを選ぶ（同じ銘柄でも日によって味変。ランダムすぎない）
+function hashStr(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
+const variant = (arr, seed) => arr[hashStr(seed) % arr.length];
+// 購入根拠: 銘柄の強い因子を見つけ、その性格に合わせた文面を組む（定型の羅列を避ける）
 function buildReason(c) {
-  const b = [];
-  if (c.ret6m != null) b.push(`200日線比${pct(c.ret6m)}・50日線比${pct(c.ret3m)}の上昇基調`);
-  if (c.price > c.sma50 && c.sma50 > c.sma200) b.push("50日・200日移動平均線がともに上向きの強いトレンド");
-  else if (c.price > c.sma50) b.push("50日線を上回り短期堅調");
-  if (c.analystUp != null) b.push(`アナリスト平均目標まで${pct(c.analystUp)}の余地`);
-  if (c.posInRange != null) b.push(`52週レンジの${Math.round(c.posInRange * 100)}%の位置`);
-  if (c.mcDisp) b.push(c.mcDisp);
-  if (c.sectorName) b.push(`セクター: ${c.sectorName}`);
-  return b.join("、") + "。（数値スコアで自動選定）";
+  const seed = (c.symbol || "") + (typeof todayISO !== "undefined" ? todayISO : "");
+  const traits = [];
+  if (c.posInRange != null && c.posInRange < 0.4) traits.push({ w: 0.5 - c.posInRange, t: variant([
+    `52週レンジ下位${Math.round(c.posInRange * 100)}%まで売られ、割安圏で拾える`,
+    `高値から大きく調整し、バリュー妙味が出ている`,
+    `年間の安値近辺で、値ごろ感からの反発余地`], seed + "v") });
+  if (c.roe != null && c.roe > 0.15) traits.push({ w: Math.min(c.roe, 0.6), t: variant([
+    `ROE${Math.round(c.roe * 100)}%と稼ぐ力が高く、業績の裏付けがある`,
+    `自己資本利益率${Math.round(c.roe * 100)}%の高収益体質`,
+    `本業の利益率が高く、株価の下支えになる強さ`], seed + "q") });
+  if (c.ret6m != null && c.ret6m > 0.12 && c.price > c.sma50) traits.push({ w: Math.min(c.ret6m, 1), t: variant([
+    `直近半年で${pct(c.ret6m)}と明確な上昇トレンド`,
+    `50日・200日線を上回り、買いの勢いが続く`,
+    `中期の値動きが右肩上がりで地合い良好`], seed + "m") });
+  if (c.analystUp != null && c.analystUp > 0.12) traits.push({ w: Math.min(c.analystUp, 0.6), t: variant([
+    `アナリスト平均目標まで${pct(c.analystUp)}、市場はまだ上値を見込む`,
+    `証券会社の目標株価に対し${pct(c.analystUp)}の余地`,
+    `プロの見立てでは割安で、見直し買いの余地`], seed + "a") });
+  if (c.vol != null && c.vol < 0.015) traits.push({ w: 0.02 - c.vol, t: variant([
+    `値動きが穏やかで下振れ耐性が比較的高い`,
+    `ボラティリティが低く腰を据えて持ちやすい`], seed + "l") });
+  if (!traits.length) traits.push({ w: 1, t: c.price > c.sma50 ? "50日線を上回り短期は堅調" : "複数指標の総合点で相対的に上位" });
+  traits.sort((a, b) => b.w - a.w);
+  const top = traits.slice(0, 2).map(x => x.t);
+  const lead = variant(["決め手は", "注目点は", "今日拾う理由は", "評価したのは"], seed + "h");
+  const join = top.length > 1 ? variant(["。加えて", "。さらに", "。そのうえ"], seed + "j") : "";
+  const tail = variant(["、という点。", "、あたり。", "、が背景。", "。"], seed + "t");
+  const sec = c.sectorName || c.sector;
+  return (sec ? `【${sec}】` : "") + lead + top[0] + (join ? join + top[1] : "") + tail;
 }
+// リスク: 銘柄の性格（過熱／割安トラップ／高負債／セクター）に応じて具体的に
 function buildRisk(c) {
+  const seed = (c.symbol || "") + (typeof todayISO !== "undefined" ? todayISO : "") + "r";
   const b = [];
-  if (c.vol != null) b.push(`日次ボラティリティ${(c.vol * 100).toFixed(1)}%${c.vol > 0.03 ? "と高め" : ""}`);
-  if (c.atrRatio != null) b.push(`平均的な1日の値動き幅${(c.atrRatio * 100).toFixed(1)}%`);
-  if (c.posInRange != null && c.posInRange > 0.9) b.push("52週高値圏で過熱感に注意");
+  if (c.vol != null && c.vol > 0.03) b.push(variant([
+    `日次ボラ${(c.vol * 100).toFixed(1)}%と荒く短期の振れ幅が大きい`,
+    `値動きが激しく、含み損益のブレに注意`], seed + "1"));
+  if (c.posInRange != null && c.posInRange > 0.9) b.push(variant([
+    `52週高値圏で過熱感、材料出尽くしの反落もありうる`,
+    `高値追いの局面で利益確定売りに押されやすい`], seed + "2"));
+  else if (c.posInRange != null && c.posInRange < 0.2) b.push(variant([
+    `安いのには理由があることも。下落トレンドが続けば戻りは鈍い`,
+    `割安圏だが、業績悪化が続くと"万年割安"に沈むリスク`], seed + "3"));
   const secText = c.sectorName || c.sector || "";
-  if (/半導体|Technology|Semiconductor/i.test(secText)) b.push("半導体・テック市況の反落リスク");
-  else if (/金融|Financial/i.test(secText)) b.push("金利動向の影響");
-  else if (/エネルギー|Energy/i.test(secText)) b.push("原油価格の変動");
-  b.push("モメンタム失速時の反落");
-  return b.join("、") + "。";
+  if (c.debt != null && c.debt > 150 && !/金融|Financial/i.test(secText)) b.push("負債資本倍率が高く、金利上昇・業績悪化時の財務負担に注意");
+  const secRisk =
+    /半導体|Semiconductor/i.test(secText) ? "半導体市況（在庫・設備投資サイクル）の反落" :
+    /テック|Technology|Communication|通信/i.test(secText) ? "金利上昇時にバリュエーションが縮みやすい" :
+    /金融|Financial/i.test(secText) ? "景気後退・金利低下時の利ざや縮小や与信費用" :
+    /エネルギー|Energy/i.test(secText) ? "原油・ガス価格の急変" :
+    /ヘルスケア|Health/i.test(secText) ? "治験結果・薬価改定・規制の影響" :
+    /生活必需|Defensive/i.test(secText) ? "ディフェンシブゆえ相場上昇局面では出遅れやすい" :
+    /消費|Consumer|Cyclical/i.test(secText) ? "景気減速による消費の冷え込み" :
+    /素材|Material|Basic/i.test(secText) ? "市況（原材料価格）と世界景気の影響" :
+    /資本財|Industrial/i.test(secText) ? "設備投資の停滞・受注減" :
+    /不動産|Real Estate/i.test(secText) ? "金利上昇による不動産価値・調達コストの悪化" :
+    /公益|Utilit/i.test(secText) ? "金利敏感（債券代替）で金利上昇に弱い" :
+    /自動車/i.test(secText) ? "為替・EV競争・関税の影響を受けやすい" : null;
+  if (secRisk) b.push(secRisk);
+  const generic = ["トレンド転換時はATRトレーリングで撤退する想定", "相場全体の急変には勝てない点に留意"];
+  if (!(c.symbol || "").startsWith("TSE:")) generic.push("円高は円建て評価の逆風"); // 米国株のみ
+  b.push(variant(generic, seed + "z"));
+  return b.join("。") + "。";
 }
 // ===== 2000銘柄ユニバース: Yahooスクリーナーで時価総額順に取得（失敗時は固定リストにフォールバック）=====
 async function screenerPage(region, offset, quoteType = "EQUITY") {
