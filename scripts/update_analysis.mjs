@@ -541,15 +541,14 @@ async function batchQuotes(entries) {
 }
 // ===== 採用: 二段階採点 → 決算±3日回避・低ボラ(債券)ガードのみ。分散は買付時の金額シェアで制御 =====
 // 偏りは「件数」ではなく買付時のセクター/銘柄の評価額シェア上限で抑える（積立額が増えても現金滞留しない）。
-const TOP_N = 12, POOL_N = 40, SCORE_EXIT_PCTL = 0.20; // スコア悪化エグジット: 候補分布の下位20%点を閾値に
+const TOP_N = 12, POOL_N = 40;
 const sectorBucket = (sector) => (sector && /投信|FUND/.test(sector)) ? "投信" : (sector || "その他");
-let HELD_EXIT = { scores: {}, cutoff: -Infinity }; // 保有銘柄の7因子スコアと閾値（売却判定で共有）
 function heldSymbols() {
   try { const pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8")); return new Set((pf.open || []).map(p => p.symbol)); } catch (e) { return new Set(); }
 }
 async function adoptWithConstraints(ranked) {
   const held = heldSymbols();
-  // Stage-1上位POOL_N ∪ 保有銘柄（rankedにある分）をプールに。保有も採点してスコア悪化を検出する。
+  // Stage-1上位POOL_N ∪ 保有銘柄（rankedにある分）をプールに。保有もStage-2採点して買い増し判定に使う。
   const pool = ranked.slice(0, POOL_N);
   const inPool = new Set(pool.map(c => c.symbol));
   for (const c of ranked) if (held.has(c.symbol) && !inPool.has(c.symbol)) { pool.push(c); inPool.add(c.symbol); }
@@ -573,12 +572,6 @@ async function adoptWithConstraints(ranked) {
   }
   // Stage-2: 全因子（value/lowVol/quality/analystUp/rating込み）で再採点して並べ替え
   const rescored = scoreAndSelect(pool, { maxPerSector: 9999, topN: pool.length });
-  // スコア悪化エグジット用: プール分布の下位20%点を閾値に、保有銘柄のスコアを記録
-  const sorted = rescored.map(c => c.score).filter(s => isFinite(s)).sort((a, b) => a - b);
-  const cutoff = sorted.length ? sorted[Math.floor(sorted.length * SCORE_EXIT_PCTL)] : -Infinity;
-  const hs = {};
-  for (const c of rescored) if (held.has(c.symbol)) hs[c.symbol] = c.score;
-  HELD_EXIT = { scores: hs, cutoff };
   // 買い候補の採用（決算回避・低ボラガード）
   const picks = [];
   for (const c of rescored) {
@@ -743,7 +736,7 @@ try {
     pos.actionsThru = todayISO;
   }
 
-  // ===== 売却判定（毎日）: ①ATRトレーリングストップ ②スコア悪化エグジット ③分散トリム =====
+  // ===== 売却判定（毎日）: ①ATRトレーリングストップ ②分散トリム =====
   const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
   // 部分/全部売却の共通処理: 手数料・税を計上し closed に記録、pos の units/cost を減らす。全部売れたら true。
   const realizeSell = (pos, pj, sellUnits, reason) => {
@@ -782,16 +775,8 @@ try {
   }
   pf.open = still;
 
-  // ② スコア悪化エグジット: 7因子スコアが候補分布の下位20%未満に落ちた保有は売る（買いと売りの一貫性）
-  still = [];
-  for (const pos of pf.open) {
-    const pj = priceJPY[pos.symbol], sc = HELD_EXIT.scores[pos.symbol];
-    if (pj != null && sc != null && sc < HELD_EXIT.cutoff) realizeSell(pos, pj, pos.units, "スコア悪化(相対順位が下位に低下)");
-    else still.push(pos);
-  }
-  pf.open = still;
-
-  // ③ 分散トリム: 値上がりで肥大化した銘柄/セクターを上限まで一部利確（35%/15%の分散を恒常的に維持）
+  // ② 分散トリム: 値上がりで肥大化した銘柄/セクターを上限まで一部利確（35%/15%の分散を恒常的に維持）
+  // （旧③スコア悪化エグジット＝候補分布下位20%で売却、はバックテストで税・手数料増による net-negative と判明したため撤去）
   {
     const NAME_HARD = 0.20, NAME_TGT = 0.15, SECTOR_HARD = 0.45, SECTOR_TGT = 0.40, DIVERSIFY_BASE = 20000;
     const cvOf = p => { const pj = priceJPY[p.symbol]; return pj != null ? p.units * pj : 0; };
