@@ -1,7 +1,7 @@
 {
-  "investedJPY": 12000,
+  "investedJPY": 16000,
   "realizedJPY": 0,
-  "valuationJPY": 11089,
+  "valuationJPY": 15218.5,
   "open": [
     {
       "symbol": "TSE:6976",
@@ -11,7 +11,7 @@
       "buyPriceJPY": 18385,
       "peakJPY": 18385,
       "costJPY": 1000,
-      "curValueJPY": 852.3,
+      "curValueJPY": 814.8,
       "trailPct": 25
     },
     {
@@ -22,7 +22,7 @@
       "buyPriceJPY": 81590,
       "peakJPY": 81590,
       "costJPY": 1000,
-      "curValueJPY": 909.3,
+      "curValueJPY": 967.2,
       "trailPct": 25
     },
     {
@@ -33,7 +33,7 @@
       "buyPriceJPY": 5171,
       "peakJPY": 5171,
       "costJPY": 1000,
-      "curValueJPY": 883.4,
+      "curValueJPY": 902.3,
       "trailPct": 25
     },
     {
@@ -44,7 +44,7 @@
       "buyPriceJPY": 72952.85,
       "peakJPY": 72952.8514,
       "costJPY": 1000,
-      "curValueJPY": 852.3,
+      "curValueJPY": 875.7,
       "trailPct": 25
     },
     {
@@ -56,7 +56,7 @@
       "buyPriceJPY": 18385,
       "peakJPY": 18385,
       "costJPY": 1000,
-      "curValueJPY": 852.3,
+      "curValueJPY": 814.8,
       "trailPct": 25
     },
     {
@@ -68,7 +68,7 @@
       "buyPriceJPY": 81590,
       "peakJPY": 81590,
       "costJPY": 1000,
-      "curValueJPY": 909.3,
+      "curValueJPY": 967.2,
       "trailPct": 25
     },
     {
@@ -80,8 +80,8 @@
       "buyPriceJPY": 13258.47,
       "peakJPY": 13258.8802,
       "costJPY": 1000,
-      "curValueJPY": 977,
-      "trailPct": 23.3
+      "curValueJPY": 904.5,
+      "trailPct": 25
     },
     {
       "symbol": "TSE:6101",
@@ -92,8 +92,8 @@
       "buyPriceJPY": 8100,
       "peakJPY": 8100,
       "costJPY": 1000,
-      "curValueJPY": 869.1,
-      "trailPct": 24.7
+      "curValueJPY": 887.7,
+      "trailPct": 23.2
     },
     {
       "symbol": "NASDAQ:DLLL",
@@ -102,9 +102,9 @@
       "buyDate": "2026-07-08",
       "units": 0.26696297136023384,
       "buyPriceJPY": 3745.84,
-      "peakJPY": 3747.9842799999997,
+      "peakJPY": 4021.6769999999997,
       "costJPY": 1000,
-      "curValueJPY": 1000.6,
+      "curValueJPY": 1073.6,
       "trailPct": 25
     },
     {
@@ -116,7 +116,7 @@
       "buyPriceJPY": 16355,
       "peakJPY": 16770,
       "costJPY": 1000,
-      "curValueJPY": 958.1,
+      "curValueJPY": 915.9,
       "trailPct": 25
     },
     {
@@ -126,9 +126,9 @@
       "buyDate": "2026-07-08",
       "units": 0.013812154696132596,
       "buyPriceJPY": 72400,
-      "peakJPY": 77250,
+      "peakJPY": 78910,
       "costJPY": 1000,
-      "curValueJPY": 1024.7,
+      "curValueJPY": 1089.9,
       "trailPct": 25
     },
     {
@@ -138,25 +138,69 @@
       "buyDate": "2026-07-08",
       "units": 0.09598855552257667,
       "buyPriceJPY": 10417.91,
-      "peakJPY": 10423.878289999999,
+      "peakJPY": 10469.35956,
       "costJPY": 1000,
-      "curValueJPY": 1000.6,
+      "curValueJPY": 1004.9,
       "trailPct": 25
+    },
+    {
+      "symbol": "TSE:285A",
+      "name": "KIOXIA HOLDINGS CORPORATION",
+      "sector": "Technology",
+      "buyDate": "2026-07-09",
+      "units": 0.012672665061462425,
+      "buyPriceJPY": 78910,
+      "peakJPY": 78910,
+      "costJPY": 1000,
+      "curValueJPY": 1000
+    },
+    {
+      "symbol": "TSE:6976",
+      "name": "TAIYO YUDEN CO LTD",
+      "sector": "Technology",
+      "buyDate": "2026-07-09",
+      "units": 0.06675567423230974,
+      "buyPriceJPY": 14980,
+      "peakJPY": 14980,
+      "costJPY": 1000,
+      "curValueJPY": 1000
+    },
+    {
+      "symbol": "NASDAQ:DLLL",
+      "name": "GraniteShares 2x Long DELL Dail",
+      "sector": "ETF",
+      "buyDate": "2026-07-09",
+      "units": 0.2486524899936022,
+      "buyPriceJPY": 4021.68,
+      "peakJPY": 4021.6769999999997,
+      "costJPY": 1000,
+      "curValueJPY": 1000
+    },
+    {
+      "symbol": "NASDAQ:MRNA",
+      "name": "Moderna, Inc.",
+      "sector": "Healthcare",
+      "buyDate": "2026-07-09",
+      "units": 0.08338955457102512,
+      "buyPriceJPY": 11991.91,
+      "peakJPY": 11991.909599999999,
+      "costJPY": 1000,
+      "curValueJPY": 1000
     }
   ],
   "closed": [],
-  "lastBuyDate": "2026-07-08",
-  "updated": "2026-07-08",
+  "lastBuyDate": "2026-07-09",
+  "updated": "2026-07-09",
   "benchmark": {
     "symbol": "FUND:0331418A",
     "name": "オルカン（eMAXIS Slim 全世界株式）",
-    "investedJPY": 12000,
-    "units": 0.3112919132149901,
-    "lastBuyDate": "2026-07-08",
+    "investedJPY": 16000,
+    "units": 0.41573328244134067,
+    "lastBuyDate": "2026-07-09",
     "startDate": "2026-07-06",
-    "lastPriceJPY": 38532,
-    "navDate": "2026-07-07",
-    "valuationJPY": 11994.7
+    "lastPriceJPY": 38299,
+    "navDate": "2026-07-08",
+    "valuationJPY": 15922.2
   },
   "history": [
     {
@@ -179,6 +223,14 @@
       "val": 11089,
       "bInv": 12000,
       "bVal": 11994.7
+    },
+    {
+      "date": "2026-07-09",
+      "inv": 16000,
+      "val": 15218.5,
+      "bInv": 16000,
+      "bVal": 15922.2
     }
-  ]
+  ],
+  "cashJPY": 0
 }
