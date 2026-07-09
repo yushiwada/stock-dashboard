@@ -199,7 +199,12 @@ async function enrichExtra(sym) {
     const ce = R.calendarEvents && R.calendarEvents.earnings && R.calendarEvents.earnings.earningsDate;
     if (ce && ce[0] && ce[0].raw) earningsInDays = Math.round((ce[0].raw * 1000 - Date.now()) / 86400000);
     const sectorName = (R.assetProfile && R.assetProfile.sector) || null;
-    return { analystUp, recMean: recMean != null ? recMean : null, earningsInDays, sectorName };
+    // クオリティ因子の素データ（ROE・負債資本倍率・純利益率）
+    const roe = fd.returnOnEquity && fd.returnOnEquity.raw;
+    const debt = fd.debtToEquity && fd.debtToEquity.raw;
+    const margin = fd.profitMargins && fd.profitMargins.raw;
+    return { analystUp, recMean: recMean != null ? recMean : null, earningsInDays, sectorName,
+      roe: roe != null ? roe : null, debt: debt != null ? debt : null, margin: margin != null ? margin : null };
   } catch (e) { return {}; }
 }
 function zscores(arr) {
@@ -209,7 +214,8 @@ function zscores(arr) {
   const sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length) || 1;
   return arr.map(x => (x != null && isFinite(x)) ? (x - m) / sd : null);
 }
-const WEIGHTS = { momentum: 0.30, trend: 0.20, analystUp: 0.18, rating: 0.10, value: 0.12, lowVol: 0.10 };
+const WEIGHTS = { momentum: 0.12, trend: 0.10, analystUp: 0.15, rating: 0.08, value: 0.20, lowVol: 0.15, quality: 0.20 };
+const isFinancial = c => /金融|Financial/i.test(c.sectorName || c.sector || "");
 function scoreAndSelect(cands, opts) {
   const maxPerSector = (opts && opts.maxPerSector) || 2;
   const topN = (opts && opts.topN) || 4;
@@ -218,6 +224,17 @@ function scoreAndSelect(cands, opts) {
   const val = cands.map(c => c.posInRange != null ? (1 - c.posInRange) : null);
   const vol = cands.map(c => c.vol != null ? c.vol : null);
   const rating = cands.map(c => c.recMean != null ? (3 - c.recMean) : null);
+  // クオリティ因子: ROE高・利益率高・低負債（銀行等の金融は本質的に高レバなので負債は使わない）
+  const zRoe = zscores(cands.map(c => c.roe != null ? c.roe : null));
+  const zDebt = zscores(cands.map(c => c.debt != null ? c.debt : null));
+  const zMargin = zscores(cands.map(c => c.margin != null ? c.margin : null));
+  const qual = cands.map((c, i) => {
+    const q = [];
+    if (zRoe[i] != null) q.push(zRoe[i]);
+    if (zMargin[i] != null) q.push(zMargin[i]);
+    if (!isFinancial(c) && zDebt[i] != null) q.push(-zDebt[i]);
+    return q.length ? q.reduce((a, b) => a + b, 0) / q.length : null;
+  });
   const zMom = zscores(mom), zUp = zscores(up), zVal = zscores(val), zVol = zscores(vol), zRating = zscores(rating);
   const scored = cands.map((c, i) => {
     const trend = ((c.price > c.sma50 ? 0.5 : 0) + (c.sma50 > c.sma200 ? 0.5 : 0));
@@ -227,7 +244,8 @@ function scoreAndSelect(cands, opts) {
       ["analystUp", zUp[i]],
       ["rating", zRating[i]],
       ["value", zVal[i]],
-      ["lowVol", zVol[i] != null ? -zVol[i] : null]
+      ["lowVol", zVol[i] != null ? -zVol[i] : null],
+      ["quality", qual[i]]
     ];
     let wsum = 0, s = 0;
     for (const kv of parts) { if (kv[1] != null) { s += WEIGHTS[kv[0]] * kv[1]; wsum += WEIGHTS[kv[0]]; } }
@@ -343,27 +361,46 @@ async function batchQuotes(entries) {
   }
   return out;
 }
-// ===== 制約付き採用: スコア順に ①決算±3日回避 ②同一セクター最大2 で4銘柄選ぶ =====
-const MAX_PER_SECTOR = 2, TOP_N = 8, POOL_N = 24;
+// ===== 制約付き採用: 二段階採点 → ①決算±3日回避 ②累積セクター上限 ③同一銘柄上限 で選ぶ =====
+// MAX_PER_SECTOR/MAX_PER_SYMBOL は「保有中＋当日採用」の累計に効く（日々の積み上げで偏らないように）
+const MAX_PER_SECTOR = 2, MAX_PER_SYMBOL = 1, TOP_N = 8, POOL_N = 40;
+const sectorBucket = (sector) => (sector && /投信|FUND/.test(sector)) ? "投信" : (sector || "その他");
+function heldCounts() {
+  const sec = {}, sym = {};
+  try {
+    const pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8"));
+    for (const p of (pf.open || [])) {
+      const b = sectorBucket(p.sector);
+      sec[b] = (sec[b] || 0) + 1;
+      sym[p.symbol] = (sym[p.symbol] || 0) + 1;
+    }
+  } catch (e) {}
+  return { sec, sym };
+}
 async function adoptWithConstraints(ranked) {
+  // Stage-1（軽い3因子）で上位POOL_Nに粗選別 → Stage-2でこのプールだけ全指標を取得して本採点
   const pool = ranked.slice(0, POOL_N);
-  // 上位候補だけ追加情報（セクター・決算日・アナリスト目標）を取得
   for (const c of pool) {
-    const ex = await enrichExtra(c.symbol);
-    Object.assign(c, ex);
+    Object.assign(c, await enrichExtra(c.symbol)); // セクター・決算・アナリスト・ROE等
+    if (c.vol == null || c.atrRatio == null) {     // lowVol用のボラ/ATRが無ければ補完
+      const m = await chartMetrics(c.symbol);
+      if (m) { if (c.vol == null) c.vol = m.vol; if (c.atrRatio == null) c.atrRatio = m.atrRatio; }
+    }
     await sleep(150);
   }
-  const picks = [], secCount = {};
-  for (const c of pool) {
+  // Stage-2: 全因子（value/lowVol/quality/analystUp/rating込み）で再採点して並べ替え
+  const rescored = scoreAndSelect(pool, { maxPerSector: 9999, topN: pool.length });
+  const { sec: secCount, sym: symCount } = heldCounts(); // 保有中の分を初期値に（累積で制約）
+  const picks = [];
+  for (const c of rescored) {
     if (c.earningsInDays != null && c.earningsInDays >= -1 && c.earningsInDays <= 3) {
       console.log("決算近接でスキップ:", c.name, `(${c.earningsInDays}日後)`); continue;
     }
-    const sec = c.sectorName || c.sector || null;
-    if (sec) {
-      const n = secCount[sec] || 0;
-      if (n >= MAX_PER_SECTOR) { console.log("セクター上限でスキップ:", c.name, `(${sec})`); continue; }
-      secCount[sec] = n + 1;
-    }
+    if ((symCount[c.symbol] || 0) >= MAX_PER_SYMBOL) { console.log("同一銘柄上限:", c.name); continue; }
+    const b = sectorBucket(c.sectorName || c.sector);
+    if ((secCount[b] || 0) >= MAX_PER_SECTOR) { console.log("セクター上限でスキップ:", c.name, `(${b})`); continue; }
+    secCount[b] = (secCount[b] || 0) + 1;
+    symCount[c.symbol] = (symCount[c.symbol] || 0) + 1;
     picks.push(c);
     if (picks.length >= TOP_N) break;
   }
@@ -459,8 +496,9 @@ async function toJPY(q) {
 
 // ===== 積立シミュレーション更新 =====
 try {
-  let pf = { investedJPY: 0, realizedJPY: 0, open: [], closed: [], lastBuyDate: null };
+  let pf = { investedJPY: 0, realizedJPY: 0, taxPaidJPY: 0, open: [], closed: [], lastBuyDate: null };
   try { pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8")); } catch (e) {}
+  if (pf.taxPaidJPY == null) pf.taxPaidJPY = 0;
 
   const symbols = new Set([...pf.open.map(p => p.symbol), ...out.picks.map(p => p.symbol)]);
   const priceJPY = {};
@@ -475,8 +513,10 @@ try {
   }
 
   // ===== 動的売却判定(保有期限なし・毎日の株価で判断)=====
-  // ①ボラ連動トレーリングストップ: ピーク比 -(ATR14×3)。8〜25%にクランプ。ATR不明時は-12%
-  // ②50日線割れ（トレンド転換）
+  // ボラ連動トレーリングストップのみ: ピーク比 -(ATR14×3)。12〜28%にクランプ。ATR不明時は-15%。
+  // 50日線割れ売りは撤廃（バリュー・クオリティ寄りの選定と噛み合わず、押し目で底売りするため）。
+  // 個別株の破綻級の暴落だけをこのストップで防ぎ、通常の調整では持ち続ける。
+  const TAX_RATE = 0.20315; // 上場株式の譲渡益課税（所得税15%＋復興0.315%＋住民5%）
   const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
   const still = [];
   for (const pos of pf.open) {
@@ -484,17 +524,20 @@ try {
     if (pj == null) { still.push(pos); continue; } // 価格が取れない日は保有継続
     pos.peakJPY = Math.max(pos.peakJPY || pos.buyPriceJPY, pj);
     const m = met[pos.symbol];
-    const trailPct = (m && m.atrRatio) ? clamp(3 * m.atrRatio, 0.08, 0.25) : 0.12;
+    const trailPct = (m && m.atrRatio) ? clamp(3 * m.atrRatio, 0.12, 0.28) : 0.15;
     pos.trailPct = Math.round(trailPct * 1000) / 10; // 表示用(%)
     const trailingHit = pj <= pos.peakJPY * (1 - trailPct);
-    const trendBreak = m ? m.price < m.sma50 : false;
-    if (trailingHit || trendBreak) {
+    if (trailingHit) {
       const v = pos.units * pj;
-      pf.realizedJPY += v;                        // 累計の受取額（統計用）
-      pf.cashJPY = Math.round(((pf.cashJPY || 0) + v) * 10) / 10; // 売却代金は待機資金へ→翌朝の購入予算に再投資
-      const why = trailingHit ? `トレーリングストップ(ピーク比-${pos.trailPct}%)` : "50日線割れ";
-      pf.closed.push({ ...pos, sellDate: todayISO, sellValueJPY: Math.round(v * 10) / 10, sellReason: why });
-      console.log("売却:", pos.name, why, pos.costJPY + "円 →", v.toFixed(1) + "円");
+      const gain = v - pos.costJPY;
+      const tax = gain > 0 ? Math.round(gain * TAX_RATE * 10) / 10 : 0; // 利益にのみ課税・損失は非課税（簡易・損益通算なし）
+      const net = Math.round((v - tax) * 10) / 10;
+      pf.realizedJPY += net;                         // 累計の受取額（税引後）
+      pf.taxPaidJPY = Math.round((pf.taxPaidJPY + tax) * 10) / 10;
+      pf.cashJPY = Math.round(((pf.cashJPY || 0) + net) * 10) / 10; // 税引後の代金を待機資金へ→翌朝再投資
+      const why = `トレーリングストップ(ピーク比-${pos.trailPct}%)`;
+      pf.closed.push({ ...pos, sellDate: todayISO, sellValueJPY: Math.round(v * 10) / 10, taxJPY: tax, netJPY: net, sellReason: why });
+      console.log("売却:", pos.name, why, pos.costJPY + "円 →", v.toFixed(1) + "円", tax > 0 ? `(税${tax}円)` : "");
     } else {
       still.push(pos);
     }
