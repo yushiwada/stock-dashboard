@@ -541,21 +541,45 @@ async function batchQuotes(entries) {
 }
 // ===== 採用: 二段階採点 → 決算±3日回避・低ボラ(債券)ガードのみ。分散は買付時の金額シェアで制御 =====
 // 偏りは「件数」ではなく買付時のセクター/銘柄の評価額シェア上限で抑える（積立額が増えても現金滞留しない）。
-const TOP_N = 12, POOL_N = 40;
+const TOP_N = 12, POOL_N = 40, SCORE_EXIT_PCTL = 0.20; // スコア悪化エグジット: 候補分布の下位20%点を閾値に
 const sectorBucket = (sector) => (sector && /投信|FUND/.test(sector)) ? "投信" : (sector || "その他");
+let HELD_EXIT = { scores: {}, cutoff: -Infinity }; // 保有銘柄の7因子スコアと閾値（売却判定で共有）
+function heldSymbols() {
+  try { const pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8")); return new Set((pf.open || []).map(p => p.symbol)); } catch (e) { return new Set(); }
+}
 async function adoptWithConstraints(ranked) {
-  // Stage-1（軽い3因子）で上位POOL_Nに粗選別 → Stage-2でこのプールだけ全指標を取得して本採点
+  const held = heldSymbols();
+  // Stage-1上位POOL_N ∪ 保有銘柄（rankedにある分）をプールに。保有も採点してスコア悪化を検出する。
   const pool = ranked.slice(0, POOL_N);
+  const inPool = new Set(pool.map(c => c.symbol));
+  for (const c of ranked) if (held.has(c.symbol) && !inPool.has(c.symbol)) { pool.push(c); inPool.add(c.symbol); }
+  // Stage-2: 全指標を取得。モメンタムは「50/200日線からの乖離」ではなくチャートの真の3/6ヶ月リターンで上書き
+  // （trend・value因子との重複を解消。④）。レバETFは倍率で割って公平化。
   for (const c of pool) {
-    Object.assign(c, await enrichExtra(c.symbol)); // セクター・決算・アナリスト・ROE等
-    if (c.vol == null || c.atrRatio == null) {     // lowVol用のボラ/ATRが無ければ補完
-      const m = await chartMetrics(c.symbol);
-      if (m) { if (c.vol == null) c.vol = m.vol; if (c.atrRatio == null) c.atrRatio = m.atrRatio; }
+    Object.assign(c, await enrichExtra(c.symbol));
+    const m = await chartMetrics(c.symbol);
+    if (m) {
+      const lev = c.lev || 1;
+      if (m.ret3m != null) c.ret3m = m.ret3m / lev;
+      if (m.ret6m != null) c.ret6m = m.ret6m / lev;
+      if (m.sma50 != null) c.sma50 = m.sma50;
+      if (m.sma200 != null) c.sma200 = m.sma200;
+      if (m.posInRange != null) c.posInRange = m.posInRange;
+      if (m.vol != null) c.vol = m.vol;
+      if (m.atrRatio != null) c.atrRatio = m.atrRatio;
+      if (m.price != null) c.price = m.price;
     }
     await sleep(150);
   }
   // Stage-2: 全因子（value/lowVol/quality/analystUp/rating込み）で再採点して並べ替え
   const rescored = scoreAndSelect(pool, { maxPerSector: 9999, topN: pool.length });
+  // スコア悪化エグジット用: プール分布の下位20%点を閾値に、保有銘柄のスコアを記録
+  const sorted = rescored.map(c => c.score).filter(s => isFinite(s)).sort((a, b) => a - b);
+  const cutoff = sorted.length ? sorted[Math.floor(sorted.length * SCORE_EXIT_PCTL)] : -Infinity;
+  const hs = {};
+  for (const c of rescored) if (held.has(c.symbol)) hs[c.symbol] = c.score;
+  HELD_EXIT = { scores: hs, cutoff };
+  // 買い候補の採用（決算回避・低ボラガード）
   const picks = [];
   for (const c of rescored) {
     if (c.earningsInDays != null && c.earningsInDays >= -1 && c.earningsInDays <= 3) {
@@ -719,12 +743,33 @@ try {
     pos.actionsThru = todayISO;
   }
 
-  // ===== 動的売却判定(保有期限なし・毎日の株価で判断)=====
-  // ボラ連動トレーリングストップのみ: ピーク比 -(ATR14×3)。12〜28%にクランプ。ATR不明時は-15%。
-  // 50日線割れ売りは撤廃（バリュー・クオリティ寄りの選定と噛み合わず、押し目で底売りするため）。
-  // 個別株の破綻級の暴落だけをこのストップで防ぎ、通常の調整では持ち続ける。
+  // ===== 売却判定（毎日）: ①ATRトレーリングストップ ②スコア悪化エグジット ③分散トリム =====
   const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
-  const still = [];
+  // 部分/全部売却の共通処理: 手数料・税を計上し closed に記録、pos の units/cost を減らす。全部売れたら true。
+  const realizeSell = (pos, pj, sellUnits, reason) => {
+    sellUnits = Math.min(sellUnits, pos.units);
+    if (!(sellUnits > 0)) return false;
+    const v = sellUnits * pj;
+    const fee = Math.round(v * COST_RATE * 10) / 10;
+    const costPortion = pos.costJPY * (sellUnits / pos.units);
+    const gain = v - costPortion;
+    const tax = gain > 0 ? Math.round(gain * TAX_RATE * 10) / 10 : 0; // 利益にのみ課税（簡易・損益通算なし）
+    const net = Math.round((v - fee - tax) * 10) / 10;
+    pf.realizedJPY += net;
+    pf.taxPaidJPY = Math.round((pf.taxPaidJPY + tax) * 10) / 10;
+    pf.feesPaidJPY = Math.round((pf.feesPaidJPY + fee) * 10) / 10;
+    pf.cashJPY = Math.round(((pf.cashJPY || 0) + net) * 10) / 10;
+    pf.closed.push({ symbol: pos.symbol, name: pos.name, sector: pos.sector || null, buyDate: pos.buyDate,
+      units: sellUnits, costJPY: Math.round(costPortion * 10) / 10, sellDate: todayISO,
+      sellValueJPY: Math.round(v * 10) / 10, feeJPY: fee, taxJPY: tax, netJPY: net, sellReason: reason });
+    pos.units -= sellUnits;
+    pos.costJPY = Math.round((pos.costJPY - costPortion) * 10) / 10;
+    console.log("売却:", pos.name, reason, `${Math.round(v)}円`, tax > 0 ? `(税${tax})` : "");
+    return pos.units <= 1e-9;
+  };
+
+  // ① ボラ連動トレーリングストップ（ピーク比 -(ATR14×3)、12〜28%クランプ、ATR不明時-15%。破綻級の暴落を防ぐ）
+  let still = [];
   for (const pos of pf.open) {
     const pj = priceJPY[pos.symbol];
     if (pj == null) { still.push(pos); continue; } // 価格が取れない日は保有継続
@@ -732,25 +777,49 @@ try {
     const m = met[pos.symbol];
     const trailPct = (m && m.atrRatio) ? clamp(3 * m.atrRatio, 0.12, 0.28) : 0.15;
     pos.trailPct = Math.round(trailPct * 1000) / 10; // 表示用(%)
-    const trailingHit = pj <= pos.peakJPY * (1 - trailPct);
-    if (trailingHit) {
-      const v = pos.units * pj;
-      const fee = Math.round(v * COST_RATE * 10) / 10;                    // 売却コスト（片道）
-      const gain = v - pos.costJPY;
-      const tax = gain > 0 ? Math.round(gain * TAX_RATE * 10) / 10 : 0;   // 利益にのみ課税・損失は非課税（簡易・損益通算なし）
-      const net = Math.round((v - fee - tax) * 10) / 10;
-      pf.realizedJPY += net;                                              // 累計の受取額（手数料・税引後）
-      pf.taxPaidJPY = Math.round((pf.taxPaidJPY + tax) * 10) / 10;
-      pf.feesPaidJPY = Math.round((pf.feesPaidJPY + fee) * 10) / 10;
-      pf.cashJPY = Math.round(((pf.cashJPY || 0) + net) * 10) / 10;       // 手数料・税引後の代金を待機資金へ→翌朝再投資
-      const why = `トレーリングストップ(ピーク比-${pos.trailPct}%)`;
-      pf.closed.push({ ...pos, sellDate: todayISO, sellValueJPY: Math.round(v * 10) / 10, feeJPY: fee, taxJPY: tax, netJPY: net, sellReason: why });
-      console.log("売却:", pos.name, why, pos.costJPY + "円 →", net.toFixed(1) + "円", `(コスト${fee}${tax > 0 ? "+税" + tax : ""})`);
-    } else {
-      still.push(pos);
-    }
+    if (pj <= pos.peakJPY * (1 - trailPct)) realizeSell(pos, pj, pos.units, `トレーリングストップ(ピーク比-${pos.trailPct}%)`);
+    else still.push(pos);
   }
   pf.open = still;
+
+  // ② スコア悪化エグジット: 7因子スコアが候補分布の下位20%未満に落ちた保有は売る（買いと売りの一貫性）
+  still = [];
+  for (const pos of pf.open) {
+    const pj = priceJPY[pos.symbol], sc = HELD_EXIT.scores[pos.symbol];
+    if (pj != null && sc != null && sc < HELD_EXIT.cutoff) realizeSell(pos, pj, pos.units, "スコア悪化(相対順位が下位に低下)");
+    else still.push(pos);
+  }
+  pf.open = still;
+
+  // ③ 分散トリム: 値上がりで肥大化した銘柄/セクターを上限まで一部利確（35%/15%の分散を恒常的に維持）
+  {
+    const NAME_HARD = 0.20, NAME_TGT = 0.15, SECTOR_HARD = 0.45, SECTOR_TGT = 0.40, DIVERSIFY_BASE = 20000;
+    const cvOf = p => { const pj = priceJPY[p.symbol]; return pj != null ? p.units * pj : 0; };
+    const priced = () => pf.open.filter(p => priceJPY[p.symbol] != null);
+    // 分母は総資産（保有＋待機資金）。ただし規模が小さいうちは DIVERSIFY_BASE で緩和（保有数が少ない初期に過剰トリムしない）。
+    // トリムは保有→現金へ移すだけで総資産は不変なので sellVal = groupVal - tgt×total
+    const portTotal = () => Math.max(priced().reduce((s, p) => s + cvOf(p), 0) + (pf.cashJPY || 0), DIVERSIFY_BASE);
+    const trimGroup = (positions, groupVal, total, hard, tgt, label) => {
+      if (total <= 0 || groupVal <= hard * total) return;
+      let sellVal = groupVal - tgt * total;
+      for (const p of positions.slice().sort((a, b) => cvOf(b) - cvOf(a))) {
+        if (sellVal <= 1) break;
+        const pj = priceJPY[p.symbol]; if (pj == null) continue;
+        const take = Math.min(sellVal, p.units * pj);
+        realizeSell(p, pj, take / pj, label);
+        sellVal -= take;
+      }
+    };
+    // 単一銘柄（総資産比で20%超→15%へ）
+    let total = portTotal();
+    const bySym = {}; for (const p of priced()) (bySym[p.symbol] = bySym[p.symbol] || []).push(p);
+    for (const sym in bySym) trimGroup(bySym[sym], bySym[sym].reduce((s, p) => s + cvOf(p), 0), total, NAME_HARD, NAME_TGT, `分散トリム(単一銘柄${NAME_HARD * 100}%超)`);
+    // セクター（総資産比で45%超→40%へ。銘柄トリム後の各セクター値で判定）
+    total = portTotal();
+    const bySec = {}; for (const p of priced()) { const b = sectorBucket(p.sector); (bySec[b] = bySec[b] || []).push(p); }
+    for (const b in bySec) trimGroup(bySec[b], bySec[b].reduce((s, p) => s + cvOf(p), 0), total, SECTOR_HARD, SECTOR_TGT, `分散トリム(${b}が${SECTOR_HARD * 100}%超)`);
+  }
+  pf.open = pf.open.filter(p => p.units > 1e-9); // 端数で0になったポジションを除去
 
   // ===== 当日の仮想購入（新規4000円＋売却/配当の現金を再投資。1000円=1ロット、1日1回のみ）=====
   // 分散はセクター評価額シェア≤35%・単一銘柄≤15%で制御。規模が小さいうちは DIVERSIFY_BASE で緩和。

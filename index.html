@@ -921,8 +921,7 @@ function render() {
   if (Array.isArray(ANALYSIS.picks) && ANALYSIS.picks.length) {
     const ph = document.createElement("div");
     ph.className = "overview";
-    ph.innerHTML = `<h2>注目の個別株 <span class="badge">${ANALYSIS.asof}時点</span></h2>
-      日米の株式・ETF・主要投資信託あわせて2000銘柄超から、値動きの強さをもとに毎朝機械的に選んでいます。投資助言ではありません。`;
+    ph.innerHTML = `<h2>注目の個別株 <span class="badge">${ANALYSIS.asof}時点</span></h2>`;
     grid.appendChild(ph);
     ANALYSIS.picks.forEach(p => {
       const card = document.createElement("div");
