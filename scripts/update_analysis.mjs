@@ -207,6 +207,22 @@ async function enrichExtra(sym) {
       roe: roe != null ? roe : null, debt: debt != null ? debt : null, margin: margin != null ? margin : null };
   } catch (e) { return {}; }
 }
+// コーポレートアクション（配当・株式分割）を sinceISO 以降について取得する。
+// 返り値: { divs: [{t(秒), amount(1株あたり・現地通貨)}], splits: [{t, num, den}] }
+async function corporateActions(symbol, sinceISO) {
+  if (symbol.startsWith("FUND:")) return { divs: [], splits: [] };
+  const code = symbol.startsWith("TSE:") ? symbol.slice(4) + ".T" : symbol.split(":")[1];
+  const p1 = Math.floor(new Date(sinceISO + "T00:00:00Z").getTime() / 1000);
+  const p2 = Math.floor(Date.now() / 1000);
+  try {
+    const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${code}?period1=${p1}&period2=${p2}&interval=1d&events=div,split`, { headers: { "User-Agent": UA } });
+    if (!r.ok) return { divs: [], splits: [] };
+    const ev = ((((await r.json()).chart || {}).result || [])[0] || {}).events || {};
+    const divs = Object.values(ev.dividends || {}).map(d => ({ t: d.date, amount: d.amount })).filter(d => d.t > p1);
+    const splits = Object.values(ev.splits || {}).map(s => ({ t: s.date, num: s.numerator, den: s.denominator })).filter(s => s.t > p1);
+    return { divs, splits };
+  } catch (e) { return { divs: [], splits: [] }; }
+}
 function zscores(arr) {
   const v = arr.filter(x => x != null && isFinite(x));
   if (v.length < 2) return arr.map(() => 0);
@@ -365,22 +381,10 @@ async function batchQuotes(entries) {
   }
   return out;
 }
-// ===== 制約付き採用: 二段階採点 → ①決算±3日回避 ②累積セクター上限 ③同一銘柄上限 で選ぶ =====
-// MAX_PER_SECTOR/MAX_PER_SYMBOL は「保有中＋当日採用」の累計に効く（日々の積み上げで偏らないように）
-const MAX_PER_SECTOR = 2, MAX_PER_SYMBOL = 1, TOP_N = 8, POOL_N = 40;
+// ===== 採用: 二段階採点 → 決算±3日回避・低ボラ(債券)ガードのみ。分散は買付時の金額シェアで制御 =====
+// 偏りは「件数」ではなく買付時のセクター/銘柄の評価額シェア上限で抑える（積立額が増えても現金滞留しない）。
+const TOP_N = 12, POOL_N = 40;
 const sectorBucket = (sector) => (sector && /投信|FUND/.test(sector)) ? "投信" : (sector || "その他");
-function heldCounts() {
-  const sec = {}, sym = {};
-  try {
-    const pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8"));
-    for (const p of (pf.open || [])) {
-      const b = sectorBucket(p.sector);
-      sec[b] = (sec[b] || 0) + 1;
-      sym[p.symbol] = (sym[p.symbol] || 0) + 1;
-    }
-  } catch (e) {}
-  return { sec, sym };
-}
 async function adoptWithConstraints(ranked) {
   // Stage-1（軽い3因子）で上位POOL_Nに粗選別 → Stage-2でこのプールだけ全指標を取得して本採点
   const pool = ranked.slice(0, POOL_N);
@@ -394,18 +398,13 @@ async function adoptWithConstraints(ranked) {
   }
   // Stage-2: 全因子（value/lowVol/quality/analystUp/rating込み）で再採点して並べ替え
   const rescored = scoreAndSelect(pool, { maxPerSector: 9999, topN: pool.length });
-  const { sec: secCount, sym: symCount } = heldCounts(); // 保有中の分を初期値に（累積で制約）
   const picks = [];
   for (const c of rescored) {
     if (c.earningsInDays != null && c.earningsInDays >= -1 && c.earningsInDays <= 3) {
       console.log("決算近接でスキップ:", c.name, `(${c.earningsInDays}日後)`); continue;
     }
     if (c.vol != null && c.vol < VOL_MIN) { console.log("低ボラ過ぎ(債券/現金相当)でスキップ:", c.name, `(${(c.vol*100).toFixed(2)}%/日)`); continue; }
-    if ((symCount[c.symbol] || 0) >= MAX_PER_SYMBOL) { console.log("同一銘柄上限:", c.name); continue; }
-    const b = sectorBucket(c.sectorName || c.sector);
-    if ((secCount[b] || 0) >= MAX_PER_SECTOR) { console.log("セクター上限でスキップ:", c.name, `(${b})`); continue; }
-    secCount[b] = (secCount[b] || 0) + 1;
-    symCount[c.symbol] = (symCount[c.symbol] || 0) + 1;
+    c.sector = c.sectorName || c.sector || null; // 買付側のシェア判定で使うセクターを確定
     picks.push(c);
     if (picks.length >= TOP_N) break;
   }
@@ -505,9 +504,11 @@ async function toJPY(q) {
 
 // ===== 積立シミュレーション更新 =====
 try {
-  let pf = { investedJPY: 0, realizedJPY: 0, taxPaidJPY: 0, open: [], closed: [], lastBuyDate: null };
+  let pf = { investedJPY: 0, realizedJPY: 0, taxPaidJPY: 0, feesPaidJPY: 0, dividendsJPY: 0, open: [], closed: [], lastBuyDate: null };
   try { pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8")); } catch (e) {}
   if (pf.taxPaidJPY == null) pf.taxPaidJPY = 0;
+  if (pf.feesPaidJPY == null) pf.feesPaidJPY = 0;
+  if (pf.dividendsJPY == null) pf.dividendsJPY = 0;
 
   const symbols = new Set([...pf.open.map(p => p.symbol), ...out.picks.map(p => p.symbol)]);
   const priceJPY = {};
@@ -521,11 +522,49 @@ try {
     try { const m = await chartMetrics(pos.symbol); if (m) met[pos.symbol] = m; await sleep(120); } catch (e) {}
   }
 
+  const TAX_RATE = 0.20315; // 譲渡益・配当への課税（所得税15%＋復興0.315%＋住民5%）
+  const COST_RATE = 0.002;  // 売買コスト（片道0.2%：手数料＋為替スプレッド相当）
+
+  // ===== 配当・株式分割の反映（必ず売却判定の前に処理する）=====
+  // 分割: 口数・取得単価・ピークを比率調整（未対応だと分割時に評価額が急落し誤売却するため）。
+  // 配当: 税引後を待機資金へ→翌朝再投資（オルカンは基準価額に配当が含まれるため、公平性のために必須）。
+  let usdjpyRate = 0;
+  for (const pos of pf.open) {
+    if (pos.symbol.startsWith("FUND:")) { pos.actionsThru = todayISO; continue; }
+    const since = pos.actionsThru || pos.buyDate;
+    if (since >= todayISO) { pos.actionsThru = todayISO; continue; } // 当日購入分などは処理対象なし
+    let ca; try { ca = await corporateActions(pos.symbol, since); } catch (e) { ca = { divs: [], splits: [] }; }
+    for (const s of ca.splits.sort((a, b) => a.t - b.t)) {
+      const f = (s.num && s.den) ? s.num / s.den : null;
+      if (f && isFinite(f) && f > 0) {
+        pos.units *= f;
+        if (pos.buyPriceJPY) pos.buyPriceJPY = Math.round((pos.buyPriceJPY / f) * 100) / 100;
+        if (pos.peakJPY) pos.peakJPY = pos.peakJPY / f;
+        console.log("株式分割を反映:", pos.name, `${s.num}:${s.den}`);
+      }
+    }
+    let posDiv = 0;
+    for (const d of ca.divs) {
+      if (d.amount == null) continue;
+      let jpy = d.amount * pos.units;
+      if (!pos.symbol.startsWith("TSE:")) { if (!usdjpyRate) usdjpyRate = await toJPY({ currency: "USD", price: 1 }); jpy *= usdjpyRate; }
+      posDiv += jpy;
+    }
+    if (posDiv > 0) {
+      const dtax = Math.round(posDiv * TAX_RATE * 10) / 10;
+      const net = Math.round((posDiv - dtax) * 10) / 10;
+      pf.dividendsJPY = Math.round((pf.dividendsJPY + posDiv) * 10) / 10;
+      pf.taxPaidJPY = Math.round((pf.taxPaidJPY + dtax) * 10) / 10;
+      pf.cashJPY = Math.round(((pf.cashJPY || 0) + net) * 10) / 10;
+      console.log("配当受取(税引後再投資):", pos.name, `${Math.round(posDiv)}円(税${dtax}円)`);
+    }
+    pos.actionsThru = todayISO;
+  }
+
   // ===== 動的売却判定(保有期限なし・毎日の株価で判断)=====
   // ボラ連動トレーリングストップのみ: ピーク比 -(ATR14×3)。12〜28%にクランプ。ATR不明時は-15%。
   // 50日線割れ売りは撤廃（バリュー・クオリティ寄りの選定と噛み合わず、押し目で底売りするため）。
   // 個別株の破綻級の暴落だけをこのストップで防ぎ、通常の調整では持ち続ける。
-  const TAX_RATE = 0.20315; // 上場株式の譲渡益課税（所得税15%＋復興0.315%＋住民5%）
   const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
   const still = [];
   for (const pos of pf.open) {
@@ -538,49 +577,66 @@ try {
     const trailingHit = pj <= pos.peakJPY * (1 - trailPct);
     if (trailingHit) {
       const v = pos.units * pj;
+      const fee = Math.round(v * COST_RATE * 10) / 10;                    // 売却コスト（片道）
       const gain = v - pos.costJPY;
-      const tax = gain > 0 ? Math.round(gain * TAX_RATE * 10) / 10 : 0; // 利益にのみ課税・損失は非課税（簡易・損益通算なし）
-      const net = Math.round((v - tax) * 10) / 10;
-      pf.realizedJPY += net;                         // 累計の受取額（税引後）
+      const tax = gain > 0 ? Math.round(gain * TAX_RATE * 10) / 10 : 0;   // 利益にのみ課税・損失は非課税（簡易・損益通算なし）
+      const net = Math.round((v - fee - tax) * 10) / 10;
+      pf.realizedJPY += net;                                              // 累計の受取額（手数料・税引後）
       pf.taxPaidJPY = Math.round((pf.taxPaidJPY + tax) * 10) / 10;
-      pf.cashJPY = Math.round(((pf.cashJPY || 0) + net) * 10) / 10; // 税引後の代金を待機資金へ→翌朝再投資
+      pf.feesPaidJPY = Math.round((pf.feesPaidJPY + fee) * 10) / 10;
+      pf.cashJPY = Math.round(((pf.cashJPY || 0) + net) * 10) / 10;       // 手数料・税引後の代金を待機資金へ→翌朝再投資
       const why = `トレーリングストップ(ピーク比-${pos.trailPct}%)`;
-      pf.closed.push({ ...pos, sellDate: todayISO, sellValueJPY: Math.round(v * 10) / 10, taxJPY: tax, netJPY: net, sellReason: why });
-      console.log("売却:", pos.name, why, pos.costJPY + "円 →", v.toFixed(1) + "円", tax > 0 ? `(税${tax}円)` : "");
+      pf.closed.push({ ...pos, sellDate: todayISO, sellValueJPY: Math.round(v * 10) / 10, feeJPY: fee, taxJPY: tax, netJPY: net, sellReason: why });
+      console.log("売却:", pos.name, why, pos.costJPY + "円 →", net.toFixed(1) + "円", `(コスト${fee}${tax > 0 ? "+税" + tax : ""})`);
     } else {
       still.push(pos);
     }
   }
   pf.open = still;
 
-  // ===== 当日の仮想購入（新規4000円＋売却代金の再投資。1000円=1ロット、1日1回のみ）=====
+  // ===== 当日の仮想購入（新規4000円＋売却/配当の現金を再投資。1000円=1ロット、1日1回のみ）=====
+  // 分散はセクター評価額シェア≤35%・単一銘柄≤15%で制御。規模が小さいうちは DIVERSIFY_BASE で緩和。
+  // 配分は2段階: ①まず1銘柄1ロットずつ分散 → ②残ロットを上限内で買い増し。→ 現金滞留せず毎日投下できる。
   let boughtToday = null;
   if (pf.lastBuyDate !== todayISO) {
-    let budget = 4000 + (pf.cashJPY || 0);
-    const LOT = 1000;
-    const nLots = Math.floor(budget / LOT);
-    const buyable = out.picks.filter(p => priceJPY[p.symbol] != null);
+    const LOT = 1000, SECTOR_CAP = 0.35, NAME_CAP = 0.15, DIVERSIFY_BASE = 20000;
+    let cash = 4000 + (pf.cashJPY || 0);
+    const curVal = p => { const pj = priceJPY[p.symbol]; return pj != null ? p.units * pj : p.costJPY; };
+    let total = pf.open.reduce((s, p) => s + curVal(p), 0);
+    const secVal = {}, symVal = {};
+    for (const p of pf.open) { const b = sectorBucket(p.sector); secVal[b] = (secVal[b] || 0) + curVal(p); symVal[p.symbol] = (symVal[p.symbol] || 0) + curVal(p); }
+    const cands = out.picks.filter(p => priceJPY[p.symbol] != null);
+    const allocLots = {};
+    const tryPlace = spreadOnly => {
+      for (const p of cands) {
+        if (spreadOnly && (allocLots[p.symbol] || 0) >= 1) continue; // 第1段階は1銘柄1ロットまで
+        const b = sectorBucket(p.sector), base = Math.max(total + LOT, DIVERSIFY_BASE);
+        if ((secVal[b] || 0) + LOT > SECTOR_CAP * base) continue;      // セクター評価額シェア上限
+        if ((symVal[p.symbol] || 0) + LOT > NAME_CAP * base) continue; // 単一銘柄評価額シェア上限
+        allocLots[p.symbol] = (allocLots[p.symbol] || 0) + 1;
+        secVal[b] += LOT; symVal[p.symbol] = (symVal[p.symbol] || 0) + LOT;
+        total += LOT; cash -= LOT; return true;
+      }
+      return false;
+    };
+    let lots = Math.floor(cash / LOT), guard = 0;
+    while (lots > 0 && guard++ < 5000 && tryPlace(true)) lots--;   // ①分散優先
+    while (lots > 0 && guard++ < 5000 && tryPlace(false)) lots--;  // ②買い増し
     const alloc = {};
-    if (buyable.length && nLots > 0) {
-      // スコア上位から1ロットずつ配る（ロットが余れば上位に2周目）
-      for (let k = 0; k < nLots; k++) {
-        const p = buyable[k % buyable.length];
-        alloc[p.symbol] = (alloc[p.symbol] || 0) + LOT;
-      }
-      for (const p of buyable) {
-        const amt = alloc[p.symbol];
-        if (!amt) continue;
-        const pj = priceJPY[p.symbol];
-        pf.open.push({
-          symbol: p.symbol, name: p.name, sector: p.sector || null, buyDate: todayISO,
-          units: amt / pj, buyPriceJPY: Math.round(pj * 100) / 100, peakJPY: pj, costJPY: amt
-        });
-        budget -= amt;
-        console.log("購入:", p.name, amt + "円");
-      }
+    for (const p of cands) {
+      const n = allocLots[p.symbol]; if (!n) continue;
+      const amt = n * LOT; alloc[p.symbol] = amt;
+      const pj = priceJPY[p.symbol];
+      const fee = Math.round(amt * COST_RATE * 10) / 10;            // 買付コスト（片道）
+      pf.feesPaidJPY = Math.round((pf.feesPaidJPY + fee) * 10) / 10;
+      pf.open.push({
+        symbol: p.symbol, name: p.name, sector: p.sector || null, buyDate: todayISO,
+        units: (amt - fee) / pj, buyPriceJPY: Math.round(pj * 100) / 100, peakJPY: pj, costJPY: amt, actionsThru: todayISO
+      });
+      console.log("購入:", p.name, amt + "円", `(コスト${fee}円)`);
     }
     pf.investedJPY += 4000;                      // 新規入金分のみ（再投資分は二重計上しない）
-    pf.cashJPY = Math.round(budget * 10) / 10;   // 1000円未満の端数は待機資金として翌日へ繰越
+    pf.cashJPY = Math.round(cash * 10) / 10;     // 上限で置けなかった分・端数は待機資金として翌日へ繰越
     pf.lastBuyDate = todayISO;
     boughtToday = alloc;
   }
