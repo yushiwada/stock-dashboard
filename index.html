@@ -279,6 +279,48 @@
 
 <div class="grid" id="grid"></div>
 
+<!-- 売買アルゴリズムの詳細（既定は畳んで表示） -->
+<div style="max-width:1800px;margin:16px auto 0;padding:0 24px">
+  <details style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;color:var(--sub);font-size:13px;line-height:1.85">
+    <summary style="cursor:pointer;color:var(--text);font-size:15px;font-weight:600">⚙️ 売買アルゴリズムの詳細（クリックで展開）</summary>
+    <div style="margin-top:12px">
+      毎朝（平日12:00 JST）に自動実行。無料の株価データのみ（LLM不使用）で約3000銘柄から注目銘柄を選び、仮想的に積み立ててオルカンと比較します。<br><br>
+
+      <b style="color:var(--text)">① 候補ユニバース</b><br>
+      日米の株式（時価総額上位）＋ETF（出来高上位）＋主要投資信託を約3000銘柄。取得失敗時は固定リストにフォールバック。<br><br>
+
+      <b style="color:var(--text)">② 足切り</b><br>
+      時価総額 ≥2000億円 / 20億ドル、売買代金 ≥10億円 / 1000万ドル。インバース(ベア)ETF・債券/国債/現金同等ETF（名称パターン＋日次ボラ0.5%未満の定量ガード）は除外。ブル(レバレッジ)ETFはモメンタムを倍率で割って減価分だけ不利化。<br><br>
+
+      <b style="color:var(--text)">③ 二段階スコアリング</b><br>
+      まず全銘柄を軽い3因子（モメンタム・トレンド・割安度）で粗選別して上位40件に絞り、その40件だけボラ・ATR・ROE・負債・利益率・アナリスト情報を取得して7因子で本採点。<br><br>
+
+      <b style="color:var(--text)">④ 7因子の重み</b>（各因子は候補内でZスコア化して加重平均）<br>
+      <span style="color:var(--text)">割安度 0.23</span>（52週レンジ内の位置。安いほど◎）／
+      <span style="color:var(--text)">クオリティ 0.22</span>（ROE・利益率・低負債。金融は負債除外）／
+      <span style="color:var(--text)">アナリスト目標余地 0.15</span>／
+      <span style="color:var(--text)">モメンタム 0.12</span>（3・6ヶ月の上昇）／
+      <span style="color:var(--text)">トレンド 0.10</span>（50日線・200日線）／
+      <span style="color:var(--text)">低ボラ 0.10</span>（下限1.2%。それ未満は同扱い）／
+      <span style="color:var(--text)">アナリスト推奨 0.08</span><br><br>
+
+      <b style="color:var(--text)">⑤ 買い付け（1日1回）</b><br>
+      新規4000円＋売却・配当で得た待機資金を再投資。1000円=1ロット。<b style="color:var(--text)">①まず上位銘柄に1ロットずつ分散→②残りを上位から買い増し</b>。ただし<b style="color:var(--text)">1セクターの評価額シェア≤35%・単一銘柄≤15%</b>に制限（規模が小さいうちは緩和）。決算発表±3日以内は見送り。<b style="color:var(--text)">売買コスト片道0.2%</b>を控除。<br><br>
+
+      <b style="color:var(--text)">⑥ 売り（毎日判定）</b><br>
+      <b style="color:var(--text)">ATR14×3のトレーリングストップのみ</b>：高値(ピーク)から「その銘柄の平均日次変動幅×3倍」下落したら売却（12〜28%にクランプ、ATR不明時は-15%）。保有期限なし、50日線割れ売りは廃止。売却益に<b style="color:var(--text)">20.315%課税</b>＋コスト0.2%。<br><br>
+
+      <b style="color:var(--text)">⑦ 配当・株式分割</b><br>
+      配当は税引後(20.315%)で現金化し翌朝再投資（米国株は円換算）。株式分割は口数・取得単価・ピークを比率調整（未対応だと評価額が急落し誤売却するため）。<br><br>
+
+      <b style="color:var(--text)">⑧ 対照実験（ベンチマーク）</b><br>
+      オルカン（eMAXIS Slim 全世界株式・基準価額＝分配金込みのトータルリターン）を毎日4000円ずつ積み立て、<b style="color:var(--text)">一切売らない</b>。損益率で戦略と比較する。<br><br>
+
+      <span style="font-size:11px">※ 実際の売買はしていません。教育・記録が目的で投資助言ではありません。</span>
+    </div>
+  </details>
+</div>
+
 <footer>
   東証銘柄はYahoo Financeのデータを円建てで表示（約20分遅延の場合あり。取得に失敗したら少し待って再読み込み）。米国株・指数はTradingViewの埋め込みチャート（指数はCFD価格）。<br>
   銘柄の追加・削除・並べ替えはこのブラウザに保存されます。注目銘柄と積立シミュレーションは毎朝の定期処理で更新。掲載内容は情報の記録が目的で、投資助言ではありません。
@@ -946,7 +988,7 @@ async function fillPortfolio() {
         損益 <b style="color:${bcol}">${bpl >= 0 ? "+" : ""}${fmt(bpl)}円（${bpct >= 0 ? "+" : ""}${bpct.toFixed(1)}%）</b></span><br>
         <b>差: <span style="color:${dcol}">${diff >= 0 ? "+" : ""}${diff.toFixed(1)}ポイント</span></b>
         <span style="font-size:11px">（${b.startDate || ""}開始・損益率で比較）</span>
-        <details style="margin-top:6px"><summary style="cursor:pointer;color:var(--accent);font-size:12px">売買ルール</summary><div style="margin-top:4px;font-size:12px">買い: 7因子の複合スコア上位（モメンタム・トレンド・アナリスト目標余地・レーティング・割安度・低ボラ・クオリティ〈ROE/利益率/低負債〉）。上位候補だけ全指標を再取得して本採点し、保有中を含む累計で同一セクター最大2・同一銘柄1・決算発表±3日は見送り。売り: 高値からその銘柄の平均日次変動幅（ATR14）×3倍の下落（12〜28%）のトレーリングストップのみ（50日線割れ売りは廃止）。保有期限なし。売却益には20.315%課税。</div></details>`;
+        <details style="margin-top:6px"><summary style="cursor:pointer;color:var(--accent);font-size:12px">売買ルール</summary><div style="margin-top:4px;font-size:12px">買い: 7因子スコア上位を、1セクター評価額35%・単一銘柄15%以内で分散（買い増しあり・決算±3日回避）。売り: ATR14×3のトレーリングストップのみ（高値から12〜28%下落）。配当は税引後で再投資、株式分割に対応、売買コスト片道0.2%、譲渡益・配当に20.315%課税。<b>詳しくはページ下部の「⚙️ 売買アルゴリズムの詳細」</b>。</div></details>`;
     }
     if (pf.open && pf.open.length) {
       const winners = pf.open.filter(p => (p.curValueJPY != null ? p.curValueJPY : p.costJPY) >= p.costJPY).length;
