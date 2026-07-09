@@ -932,7 +932,7 @@ async function fillPortfolio() {
       <span style="font-size:16px">ピック戦略: 累計投資額 <b style="color:var(--text)">${fmt(pf.investedJPY)}円</b> ／
       評価額 <b style="color:var(--text)">${fmt(pf.valuationJPY)}円</b> ／
       損益 <b style="color:${col}">${pl >= 0 ? "+" : ""}${fmt(pl)}円（${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%）</b></span>
-      <span style="font-size:11px">（評価額＝保有中の現在価値＋待機資金${fmt(pf.cashJPY || 0)}円${pf.taxPaidJPY ? `／うち売却益への課税(20.315%)で累計 ${fmt(pf.taxPaidJPY)}円 納税` : ""}。${pf.updated} 時点）</span>`;
+      <span style="font-size:11px">（評価額＝保有中の現在価値＋待機資金${fmt(pf.cashJPY || 0)}円。${pf.dividendsJPY ? `配当受取(税引後再投資)累計 ${fmt(pf.dividendsJPY)}円／` : ""}${pf.feesPaidJPY ? `売買コスト(片道0.2%)累計 ${fmt(pf.feesPaidJPY)}円／` : ""}${pf.taxPaidJPY ? `納税(譲渡益・配当20.315%)累計 ${fmt(pf.taxPaidJPY)}円。` : ""}${pf.updated} 時点）</span>`;
     if (pf.benchmark && pf.benchmark.investedJPY) {
       const b = pf.benchmark;
       const bval = b.valuationJPY || 0;
