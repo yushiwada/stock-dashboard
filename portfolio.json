@@ -1,5 +1,5 @@
 {
-  "investedJPY": 4000,
+  "investedJPY": 8000,
   "realizedJPY": 0,
   "taxPaidJPY": 0,
   "open": [
@@ -12,7 +12,9 @@
       "buyPriceJPY": 1484,
       "peakJPY": 1484,
       "costJPY": 1000,
-      "curValueJPY": 1000
+      "curValueJPY": 983.2,
+      "actionsThru": "2026-07-10",
+      "trailPct": 35
     },
     {
       "symbol": "NASDAQ:MU",
@@ -21,9 +23,11 @@
       "buyDate": "2026-07-09",
       "units": 0.006496239571170858,
       "buyPriceJPY": 153935.21,
-      "peakJPY": 153935.20959999997,
+      "peakJPY": 160388.84524000002,
       "costJPY": 1000,
-      "curValueJPY": 1000
+      "curValueJPY": 1041.9,
+      "actionsThru": "2026-07-10",
+      "trailPct": 35
     },
     {
       "symbol": "NASDAQ:TRI",
@@ -34,7 +38,9 @@
       "buyPriceJPY": 14421.69,
       "peakJPY": 14421.691379999998,
       "costJPY": 1000,
-      "curValueJPY": 1000
+      "curValueJPY": 996,
+      "actionsThru": "2026-07-10",
+      "trailPct": 35
     },
     {
       "symbol": "TSE:285A",
@@ -43,27 +49,29 @@
       "buyDate": "2026-07-09",
       "units": 0.012799180852425445,
       "buyPriceJPY": 78130,
-      "peakJPY": 78130,
+      "peakJPY": 83250,
       "costJPY": 1000,
-      "curValueJPY": 1000
+      "curValueJPY": 1065.5,
+      "actionsThru": "2026-07-10",
+      "trailPct": 35
     }
   ],
   "closed": [],
   "lastBuyDate": "2026-07-09",
-  "cashJPY": 0,
+  "cashJPY": 4000,
   "benchmark": {
     "symbol": "FUND:0331418A",
     "name": "オルカン（eMAXIS Slim 全世界株式）",
-    "investedJPY": 4000,
-    "units": 0.10444136922635056,
-    "lastBuyDate": "2026-07-09",
+    "investedJPY": 8000,
+    "units": 0.20926042533075034,
+    "lastBuyDate": "2026-07-10",
     "startDate": "2026-07-09",
-    "lastPriceJPY": 38299,
-    "navDate": "2026-07-08",
-    "valuationJPY": 4000
+    "lastPriceJPY": 38161,
+    "navDate": "2026-07-09",
+    "valuationJPY": 7985.6
   },
-  "valuationJPY": 4000,
-  "updated": "2026-07-09",
+  "valuationJPY": 8086.6,
+  "updated": "2026-07-10",
   "history": [
     {
       "date": "2026-07-09",
@@ -71,6 +79,17 @@
       "val": 4000,
       "bInv": 4000,
       "bVal": 4000
+    },
+    {
+      "date": "2026-07-10",
+      "inv": 8000,
+      "val": 8086.6,
+      "bInv": 8000,
+      "bVal": 7985.6
     }
-  ]
+  ],
+  "feesPaidJPY": 0,
+  "dividendsJPY": 0,
+  "lastTrimMonth": "2026-07",
+  "lastContribDate": "2026-07-10"
 }
