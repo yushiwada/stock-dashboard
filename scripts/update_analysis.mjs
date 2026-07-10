@@ -345,6 +345,11 @@ function zscores(arr) {
 // バックテスト(2024-05〜2026-07・独立半期OOS)で、価格因子はvalue/lowVol偏重→momentum/trend寄りが前後半とも指数超え、
 // value/lowVol偏重は両半期で指数負けと判明。中庸傾斜としてmomentum/trendを増やしvalue/lowVol/quality/ratingを削減。
 const WEIGHTS = { momentum: 0.20, trend: 0.15, analystUp: 0.15, rating: 0.05, value: 0.16, lowVol: 0.11, quality: 0.18 };
+// フォワードA/B検証: A(あり)=上のWEIGHTS(quality/analyst/rating込み7因子)。B(なし)=価格4因子のみ(quality/analystUp/rating=0)。
+// ROE/アナリスト評価は無料データでは過去検証不能(先読み)なので、実運用で並走させて本当に効くか日次で記録する。
+const WEIGHTS_B = { momentum: 0.20, trend: 0.15, analystUp: 0, rating: 0, value: 0.16, lowVol: 0.11, quality: 0 };
+let ACTIVE_WEIGHTS = WEIGHTS;   // scoreAndSelect が参照する重み（A/Bで切替）
+let ACTIVE_PF_FILE = PF_FILE;   // heldSymbols が参照するポートフォリオ（A/Bで切替）
 // 低ボラ因子の下限: これ未満の日次ボラ（債券・現金同等ETF等）は同じ扱いにし、"低ボラなだけ"で突出させない
 const VOL_FLOOR = 0.012;
 // これ未満の日次ボラは株ではあり得ない（債券・現金同等）とみなし、注目銘柄から除外する定量ガード
@@ -382,7 +387,7 @@ function scoreAndSelect(cands, opts) {
       ["quality", qual[i]]
     ];
     let wsum = 0, s = 0;
-    for (const kv of parts) { if (kv[1] != null) { s += WEIGHTS[kv[0]] * kv[1]; wsum += WEIGHTS[kv[0]]; } }
+    for (const kv of parts) { if (kv[1] != null) { s += ACTIVE_WEIGHTS[kv[0]] * kv[1]; wsum += ACTIVE_WEIGHTS[kv[0]]; } }
     return Object.assign({}, c, { trend, score: wsum > 0 ? s / wsum : -Infinity });
   });
   scored.sort((a, b) => b.score - a.score);
@@ -546,7 +551,7 @@ async function batchQuotes(entries) {
 const TOP_N = 12, POOL_N = 40;
 const sectorBucket = (sector) => (sector && /投信|FUND/.test(sector)) ? "投信" : (sector || "その他");
 function heldSymbols() {
-  try { const pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8")); return new Set((pf.open || []).map(p => p.symbol)); } catch (e) { return new Set(); }
+  try { const pf = JSON.parse(fs.readFileSync(ACTIVE_PF_FILE, "utf8")); return new Set((pf.open || []).map(p => p.symbol)); } catch (e) { return new Set(); }
 }
 async function adoptWithConstraints(ranked) {
   const held = heldSymbols();
@@ -650,9 +655,7 @@ async function selectPicks() {
   console.log("候補", cands.length, "銘柄から", picks.length, "銘柄採用（セクター上限2・決算±3日回避）");
   return picks.map(t => ({ name: t.name, symbol: t.symbol, sector: t.sectorName || t.sector || null, reason: buildReason(t), risk: buildRisk(t) }));
 }
-try { out.picks = await selectPicks(); }
-catch (e) { console.log("picks選定に失敗:", e.message); out.picks = []; }
-if (!Array.isArray(out.picks)) out.picks = [];
+// picks はシミュレーション内で A/B それぞれの重みで計算する（下の simulate() 参照）
 
 // ===== 株価取得（Actionsのサーバー環境からはYahooに直接アクセス可能） =====
 async function yQuote(symbol) {
@@ -679,15 +682,21 @@ async function toJPY(q) {
   return q.price * usdjpy;
 }
 
-// ===== 積立シミュレーション更新 =====
-try {
+// ===== 積立シミュレーション更新（A/B並走: A=あり(7因子) / B=なし(価格4因子)）=====
+async function simulate(pfFile, weights, primary) {
+ ACTIVE_WEIGHTS = weights; ACTIVE_PF_FILE = pfFile;
+ let picks = [];
+ try { picks = await selectPicks(); } catch (e) { console.log("picks選定に失敗:", e.message); picks = []; }
+ if (!Array.isArray(picks)) picks = [];
+ if (primary) out.picks = picks;
+ try {
   let pf = { investedJPY: 0, realizedJPY: 0, taxPaidJPY: 0, feesPaidJPY: 0, dividendsJPY: 0, open: [], closed: [], lastBuyDate: null };
-  try { pf = JSON.parse(fs.readFileSync(PF_FILE, "utf8")); } catch (e) {}
+  try { pf = JSON.parse(fs.readFileSync(pfFile, "utf8")); } catch (e) {}
   if (pf.taxPaidJPY == null) pf.taxPaidJPY = 0;
   if (pf.feesPaidJPY == null) pf.feesPaidJPY = 0;
   if (pf.dividendsJPY == null) pf.dividendsJPY = 0;
 
-  const symbols = new Set([...pf.open.map(p => p.symbol), ...out.picks.map(p => p.symbol)]);
+  const symbols = new Set([...pf.open.map(p => p.symbol), ...picks.map(p => p.symbol)]);
   const priceJPY = {};
   for (const s of symbols) {
     try { priceJPY[s] = await toJPY(await yQuote(s)); } catch (e) { console.log("価格取得失敗:", s, e.message); }
@@ -822,7 +831,7 @@ try {
     let total = pf.open.reduce((s, p) => s + curVal(p), 0);
     const secVal = {}, symVal = {};
     for (const p of pf.open) { const b = sectorBucket(p.sector); secVal[b] = (secVal[b] || 0) + curVal(p); symVal[p.symbol] = (symVal[p.symbol] || 0) + curVal(p); }
-    const cands = out.picks.filter(p => priceJPY[p.symbol] != null);
+    const cands = picks.filter(p => priceJPY[p.symbol] != null);
     const allocLots = {};
     const tryPlace = spreadOnly => {
       for (const p of cands) {
@@ -856,11 +865,10 @@ try {
     pf.lastBuyDate = todayISO;
     boughtToday = alloc;
   }
-  // サイトに表示する注目銘柄は実際に買った銘柄（買いのない再実行日は上位4件）
-  if (boughtToday && Object.keys(boughtToday).length) {
-    out.picks = out.picks.filter(p => boughtToday[p.symbol]);
-  } else {
-    out.picks = out.picks.slice(0, 4);
+  // サイトに表示する注目銘柄は実際に買った銘柄（買いのない再実行日は上位4件）。表示はA(primary)のみ
+  if (primary) {
+    if (boughtToday && Object.keys(boughtToday).length) out.picks = picks.filter(p => boughtToday[p.symbol]);
+    else out.picks = picks.slice(0, 4);
   }
 
   // ===== 対照実験: オルカン(eMAXIS Slim 全世界株式・基準価額)を毎日4000円仮想積立 =====
@@ -917,11 +925,26 @@ try {
     pf.history.push(hEntry);
   }
 
-  fs.writeFileSync(PF_FILE, JSON.stringify(pf, null, 2));
-  console.log(`ポートフォリオ更新: 投資${pf.investedJPY}円 / 評価${pf.valuationJPY}円 / 保有${pf.open.length}件`);
-} catch (e) {
-  console.log("シミュレーション更新をスキップ:", e.message);
+  fs.writeFileSync(pfFile, JSON.stringify(pf, null, 2));
+  console.log(`ポートフォリオ更新[${primary ? "A:あり" : "B:なし"}]: 投資${pf.investedJPY}円 / 評価${pf.valuationJPY}円 / 保有${pf.open.length}件`);
+ } catch (e) {
+  console.log(`シミュレーション更新をスキップ[${primary ? "A" : "B"}]:`, e.message);
+ }
 }
+// フォワードA/B: B(なし)の状態は portfolio.json の .B に埋め込んで永続化（ワークフローが portfolio.json をコミットするため別ファイル不要）。
+// 実行時: .B を scratch の portfolio_b.json に展開 → 処理 → 結果を .B に戻す。初回は A の現状からコピーして同一スタート。
+try {
+  const baseA = JSON.parse(fs.readFileSync(PF_FILE, "utf8"));
+  if (baseA.B) { fs.writeFileSync("portfolio_b.json", JSON.stringify(baseA.B, null, 2)); delete baseA.B; fs.writeFileSync(PF_FILE, JSON.stringify(baseA, null, 2)); }
+  else fs.copyFileSync(PF_FILE, "portfolio_b.json");
+} catch (e) { try { fs.copyFileSync(PF_FILE, "portfolio_b.json"); } catch (e2) {} }
+await simulate(PF_FILE, WEIGHTS, true);              // A: あり（quality/analyst込み7因子）
+await simulate("portfolio_b.json", WEIGHTS_B, false); // B: なし（価格4因子のみ）
+try {  // B を portfolio.json の .B に埋め込む（portfolio.json のコミットだけでBも永続化される）
+  const a = JSON.parse(fs.readFileSync(PF_FILE, "utf8"));
+  a.B = JSON.parse(fs.readFileSync("portfolio_b.json", "utf8"));
+  fs.writeFileSync(PF_FILE, JSON.stringify(a, null, 2));
+} catch (e) { console.log("B埋め込み失敗:", e.message); }
 
 // ===== ANALYSIS ブロック書き換え =====
 const { summary, ...analysis } = out;

@@ -991,6 +991,20 @@ async function fillPortfolio() {
         <span style="font-size:11px">（${b.startDate || ""}開始・損益率で比較）</span>
         <details style="margin-top:6px"><summary style="cursor:pointer;color:var(--accent);font-size:12px">売買ルール</summary><div style="margin-top:4px;font-size:12px">買い: 7因子スコア上位を、1セクター評価額35%・単一銘柄15%以内で分散（積立は毎日・購入は週1回・買い増しあり・決算±3日回避）。売り: 暴落ストップ（高値から-35%）と分散トリム（月1回）。配当は税引後で再投資、株式分割に対応、売買コスト片道0.2%、譲渡益・配当に20.315%課税。<b>詳しくはページ下部の「⚙️ 売買アルゴリズムの詳細」</b>。</div></details>`;
     }
+    try {
+      const pfB = await (await fetch("portfolio_b.json", { cache: "no-store" })).json();
+      if (pfB && pfB.investedJPY) {
+        const bpl = pfB.valuationJPY - pfB.investedJPY;
+        const bpct = pfB.investedJPY ? (bpl / pfB.investedJPY * 100) : 0;
+        const abDiff = pct - bpct; // A(あり・7因子) − B(なし・価格4因子)
+        const abcol = abDiff >= 0 ? "var(--up)" : "var(--down)";
+        hd += `<br><span style="font-size:14px">【フォワード検証: ROE・アナリスト因子 あり vs なし】
+          あり(7因子) <b style="color:var(--text)">${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%</b> ／
+          なし(価格4因子) <b style="color:var(--text)">${bpct >= 0 ? "+" : ""}${bpct.toFixed(1)}%</b> ／
+          差(あり−なし) <b style="color:${abcol}">${abDiff >= 0 ? "+" : ""}${abDiff.toFixed(1)}pt</b></span>
+          <span style="font-size:11px">（ROE・アナリスト評価は過去データで検証不能なため、同一スタートから実運用で並走比較中。プラスが続けば"あり"が有効。${pfB.updated || ""}時点）</span>`;
+      }
+    } catch (e) {}
     if (pf.open && pf.open.length) {
       const winners = pf.open.filter(p => (p.curValueJPY != null ? p.curValueJPY : p.costJPY) >= p.costJPY).length;
       hd += `<br><details style="margin-top:8px"><summary style="cursor:pointer;color:var(--accent);font-size:13px">保有中 ${pf.open.length}件（プラス${winners}・マイナス${pf.open.length - winners}）を表示</summary><table class="pf-table"><tr><th>銘柄</th><th>セクター</th><th>購入日</th><th>投資</th><th>現在価値</th><th>売却ライン</th></tr>` +
