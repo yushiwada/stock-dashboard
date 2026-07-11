@@ -45,6 +45,9 @@ const ALGO = {
 
   // --- 売却①: 暴落ハードストップ(毎日) -------------------------------------------
   hardStop: 0.35,   // ピーク比これだけ下落で全売却。backtest.py cfg: hard_stop(=0.35)
+  // V2.1: レバレッジ型ETFのみ深めの-55%ストップ(日次減価で通常の-35%だと早すぎるため広く取る)。
+  // 通常銘柄は従来どおり hardStop(=0.35) を使う。W12/W12bで検証。backtest.py cfg: hard_stop_lev(=0.55)
+  hardStopLev: 0.55,
 
   // --- 売却②: 集中ガード/分散トリム(月1回) ---------------------------------------
   // A(V2): ノーセルの帰結の単一銘柄肥大化だけを月1で抑える。backtest.py cfg: trim_mode="conc", conc_trim
@@ -691,16 +694,16 @@ async function selectPicks() {
     const mc = d.marketCap || (u.etf ? (d.netAssets || 0) : 0), vol = d.averageDailyVolume3Month || d.regularMarketVolume || 0;
     const jpy = d.currency === "JPY";
     if (!u.etf && mc < (jpy ? 2e11 : 2e9)) continue; // 株式: 時価総額 約2000億円 / 20億ドル 以上
-    // ETFのフィルタ: インバース(ベア)型・レバレッジ(ブル)型・債券系はユニバースから除外。
-    // レバレッジ型を「新規買い」の候補から外すことで、事実上「新規買い停止・既存はストップまで保有」
-    // という挙動になる(既存保有にレバETFがあっても、この選定は新規候補のみを対象にするため売却はされず、
-    // 暴落ストップ/集中ガードに掛かるまで従来通り保有され続ける)。A系列(V2)・B系列とも共通。
+    // ETFのフィルタ: インバース(ベア)型・債券系はユニバースから除外。
+    // V2.1: レバレッジ(ブル)型ETFは「除外」をやめ候補に戻す(W12/W12bで検証)。除外ではなく、売り側で
+    // 深めの-55%ストップ(hardStopLev)を掛ける「ストップ差別化」で日次減価リスクを管理する。
+    // ユニバース復帰・ストップ差別化ともA系列(V2)・B系列共通(コードをシンプルに保つため。B系列は月次
+    // 分散トリムが別途あるので、レバの肥大化はそちらでも抑制される)。
     let lev = 1;
     if (u.etf) {
       const nm = u.name || "";
       if (/(inverse|インバース|ベア|\bbear\b|\bshort\b|-1x)/i.test(nm)) continue;
-      // ブル(レバレッジ)型ETFはシンボル/名称ベースで完全除外(倍率調整はやめて統一)。
-      if (isLeveragedETF(u)) continue;
+      // V2.1: レバレッジ(ブル)型ETFはここで除外せず候補に残す(売り側の hardStopLev で差別化)。
       // 債券・国債・現金同等（マネーマーケット等）ETFは株の「注目銘柄」に馴染まないため除外。
       // スクリーナーの銘柄名は途中で切れることがある（"...Investment Gra"）ので、満期レンジ表記や
       // "investment gra"/"corporate" 等の断片でも拾えるようにする。
@@ -859,14 +862,17 @@ async function simulate(pfFile, weights, primary) {
 
   // ① 暴落限定ストップ（ピーク比 -35%固定）。日次ATRトレーリング(12〜28%)はバックテストで上昇相場の
   //    「押し目売り→高値買い直し→課税」whipsawがnet有害(費用の大半)と判明したため、大暴落だけ拾う広い固定%に置換。
-  const HARD_STOP = ALGO.hardStop; // ピーク比の暴落ストップ率（ALGO集約）
+  const HARD_STOP = ALGO.hardStop; // ピーク比の暴落ストップ率（ALGO集約・通常銘柄）
+  const HARD_STOP_LEV = ALGO.hardStopLev; // V2.1: レバETF専用の深めストップ率（ALGO集約）
   let still = [];
   for (const pos of pf.open) {
     const pj = priceJPY[pos.symbol];
     if (pj == null) { still.push(pos); continue; } // 価格が取れない日は保有継続
     pos.peakJPY = Math.max(pos.peakJPY || pos.buyPriceJPY, pj);
-    pos.trailPct = HARD_STOP * 100; // 表示用(%)
-    if (pj <= pos.peakJPY * (1 - HARD_STOP)) realizeSell(pos, pj, pos.units, `暴落ストップ(ピーク比-${pos.trailPct}%)`);
+    // V2.1: 保有銘柄がレバETFなら深めの-55%(hardStopLev)、それ以外は従来の-35%(hardStop)。A/B共通。
+    const stop = isLeveragedETF(pos) ? HARD_STOP_LEV : HARD_STOP;
+    pos.trailPct = Math.round(stop * 1000) / 10; // 表示用(%)
+    if (pj <= pos.peakJPY * (1 - stop)) realizeSell(pos, pj, pos.units, `暴落ストップ(ピーク比-${pos.trailPct}%)`);
     else still.push(pos);
   }
   pf.open = still;
