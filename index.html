@@ -293,24 +293,22 @@
       時価総額 ≥2000億円 / 20億ドル、売買代金 ≥10億円 / 1000万ドル。インバース(ベア)ETF・債券/国債/現金同等ETF（名称パターン＋日次ボラ0.5%未満の定量ガード）は除外。ブル(レバレッジ)ETFはモメンタムを倍率で割って減価分だけ不利化。<br><br>
 
       <b style="color:var(--text)">③ 二段階スコアリング</b><br>
-      まず全銘柄を軽い3因子（モメンタム・トレンド・割安度）で粗選別して上位40件に絞り、その40件＋保有中の銘柄だけボラ・ROE・負債・利益率・アナリスト情報を取得して7因子で本採点（保有銘柄も同じ採点で買い増し判定に使う）。<br><br>
+      まず全銘柄を軽い3因子（モメンタム・トレンド・割安度）で粗選別して上位40件に絞り、その40件＋保有中の銘柄だけボラ等を取得して本採点（採用戦略は下記の価格4因子で採点。保有銘柄も同じ採点で買い増し判定に使う）。<br><br>
 
-      <b style="color:var(--text)">④ 7因子の重み</b>（各因子は候補内でZスコア化して加重平均。バックテストの独立半期検証で、割安/低ボラ偏重は指数に負け、モメンタム/トレンド寄りが前後半とも指数超えと判明したため重みを調整）<br>
-      <span style="color:var(--text)">モメンタム 0.20</span>（3・6ヶ月の実リターン）／
-      <span style="color:var(--text)">クオリティ 0.18</span>（ROE・利益率・低負債。金融は負債除外）／
-      <span style="color:var(--text)">割安度 0.16</span>（52週レンジ内の位置。安いほど◎）／
-      <span style="color:var(--text)">トレンド 0.15</span>（50日線・200日線）／
-      <span style="color:var(--text)">アナリスト目標余地 0.15</span>／
-      <span style="color:var(--text)">低ボラ 0.11</span>（下限1.2%。それ未満は同扱い）／
-      <span style="color:var(--text)">アナリスト推奨 0.05</span><br><br>
+      <b style="color:var(--text)">④ 因子の重み（チャンピオンV2＝価格モメンタム傾斜）</b>（各因子は候補内でZスコア化して加重平均。バックテスト（大箱473〜907銘柄・動的ユニバース）で、割安/低ボラ偏重は指数に負け、モメンタム/トレンド寄りが指数勝率88〜100%・6種の頑健性テスト全通過と判明したため価格4因子に傾斜。代償は最大DD −38〜−43%）<br>
+      <span style="color:var(--text)">モメンタム 0.35</span>（直近1ヶ月を除いた約6ヶ月リターン＝12-1式。短期の高値掴みを避ける）／
+      <span style="color:var(--text)">トレンド 0.25</span>（50日線・200日線）／
+      <span style="color:var(--text)">割安度 0.22</span>（52週レンジ内の位置。安いほど◎）／
+      <span style="color:var(--text)">低ボラ 0.18</span>（下限1.2%。それ未満は同扱い）<br>
+      <span style="font-size:12px">※ ROE・利益率・アナリスト等のファンダ因子は無料データでは過去検証できない(先読み)ため採用戦略には入れず、「中庸バランス」の影ポートフォリオで実運用の並走比較（上のフォワード検証）に回している。</span><br><br>
 
       <b style="color:var(--text)">⑤ 買い付け（積立は毎日・購入は週1回）</b><br>
       積立4000円は毎日、待機資金へ加算（ベンチのオルカンも毎日積立なので同条件）。<b style="color:var(--text)">購入は週1回、貯まった待機資金をまとめて配分</b>。1000円=1ロット。<b style="color:var(--text)">①まず上位銘柄に1ロットずつ分散→②残りを上位から買い増し</b>。<b style="color:var(--text)">1セクターの評価額シェア≤35%・単一銘柄≤15%</b>に制限（規模が小さいうちは緩和）。決算発表±3日以内は見送り。<b style="color:var(--text)">売買コスト片道0.2%</b>を控除。（毎日スコア上位を追うより週次でまとめ買う方が、高値掴み・即トリムの無駄売買が減ると検証。）<br><br>
 
       <b style="color:var(--text)">⑥ 売り（2つの判定）</b><br>
       ❶<b style="color:var(--text)">暴落ストップ（毎日）</b>：高値(ピーク)から<b style="color:var(--text)">-35%</b>下落で売却（大暴落だけ拾う）。日次ATRトレーリングは上昇相場で「押し目売り→高値買い直し→課税」の無駄売買がリターンを削ると検証されたため、広い固定ストップに置換。
-      ❷<b style="color:var(--text)">分散トリム（月1回）</b>：値上がりで単一銘柄が総資産の20%超→15%、セクターが45%超→40%へ一部利確（規模が小さいうちは緩和。日次より月次の方が税・手数料が減りDDは同等と検証）。
-      保有期限なし。売却益・配当に<b style="color:var(--text)">20.315%課税</b>＋売買コスト片道0.2%。<br><br>
+      ❷<b style="color:var(--text)">集中ガード（月1回）</b>：V2は勝ち銘柄を持ち切る「ノーセル」方針（月次の分散トリムはリターンを削るため廃止）だが、その帰結で単一銘柄が肥大化する。単一銘柄が総資産の<b style="color:var(--text)">40%超</b>になった場合のみ<b style="color:var(--text)">30%</b>まで部分利確して一撃のダウンサイドを抑える。
+      保有期限なし。売却益・配当に<b style="color:var(--text)">20.315%課税</b>（売却益は年内で損益通算し、損失は同年の利益と相殺＝日本の特定口座に準拠）＋売買コスト片道0.2%。<br><br>
 
       <b style="color:var(--text)">⑦ 配当・株式分割</b><br>
       配当は税引後(20.315%)で現金化し翌朝再投資（米国株は円換算）。株式分割は口数・取得単価・ピークを比率調整（未対応だと評価額が急落し誤売却するため）。<br><br>
@@ -989,20 +987,20 @@ async function fillPortfolio() {
         損益 <b style="color:${bcol}">${bpl >= 0 ? "+" : ""}${fmt(bpl)}円（${bpct >= 0 ? "+" : ""}${bpct.toFixed(1)}%）</b></span><br>
         <b>差: <span style="color:${dcol}">${diff >= 0 ? "+" : ""}${diff.toFixed(1)}ポイント</span></b>
         <span style="font-size:11px">（${b.startDate || ""}開始・損益率で比較）</span>
-        <details style="margin-top:6px"><summary style="cursor:pointer;color:var(--accent);font-size:12px">売買ルール</summary><div style="margin-top:4px;font-size:12px">買い: 7因子スコア上位を、1セクター評価額35%・単一銘柄15%以内で分散（積立は毎日・購入は週1回・買い増しあり・決算±3日回避）。売り: 暴落ストップ（高値から-35%）と分散トリム（月1回）。配当は税引後で再投資、株式分割に対応、売買コスト片道0.2%、譲渡益・配当に20.315%課税。<b>詳しくはページ下部の「⚙️ 売買アルゴリズムの詳細」</b>。</div></details>`;
+        <details style="margin-top:6px"><summary style="cursor:pointer;color:var(--accent);font-size:12px">売買ルール</summary><div style="margin-top:4px;font-size:12px">買い: モメンタム傾斜スコア(価格4因子)の上位を、1セクター評価額35%・単一銘柄15%以内で分散（積立は毎日・購入は週1回・買い増しあり・決算±3日回避）。売り: 暴落ストップ（高値から-35%）と集中ガード（単一銘柄40%超→30%・月1回）。配当は税引後で再投資、株式分割に対応、売買コスト片道0.2%、譲渡益に20.315%課税（売却益は年内で損益通算）。<b>詳しくはページ下部の「⚙️ 売買アルゴリズムの詳細」</b>。</div></details>`;
     }
     try {
-      const pfB = await (await fetch("portfolio_b.json", { cache: "no-store" })).json();
+      const pfB = pf.B;  // B(影の「中庸」版)は portfolio.json の .B に埋め込んで永続化している（別ファイルfetchは404になるため）
       if (pfB && pfB.investedJPY) {
         const bpl = pfB.valuationJPY - pfB.investedJPY;
         const bpct = pfB.investedJPY ? (bpl / pfB.investedJPY * 100) : 0;
-        const abDiff = pct - bpct; // A(あり・7因子) − B(なし・価格4因子)
+        const abDiff = pct - bpct; // A(攻めV2) − B(中庸)
         const abcol = abDiff >= 0 ? "var(--up)" : "var(--down)";
-        hd += `<br><span style="font-size:14px">【フォワード検証: ROE・アナリスト因子 あり vs なし】
-          あり(7因子) <b style="color:var(--text)">${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%</b> ／
-          なし(価格4因子) <b style="color:var(--text)">${bpct >= 0 ? "+" : ""}${bpct.toFixed(1)}%</b> ／
-          差(あり−なし) <b style="color:${abcol}">${abDiff >= 0 ? "+" : ""}${abDiff.toFixed(1)}pt</b></span>
-          <span style="font-size:11px">（ROE・アナリスト評価は過去データで検証不能なため、同一スタートから実運用で並走比較中。プラスが続けば"あり"が有効。${pfB.updated || ""}時点）</span>`;
+        hd += `<br><span style="font-size:14px">【フォワード検証: 攻めV2（採用中） vs 中庸（割安/低ボラ厚め）】
+          攻めV2 <b style="color:var(--text)">${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%</b> ／
+          中庸 <b style="color:var(--text)">${bpct >= 0 ? "+" : ""}${bpct.toFixed(1)}%</b> ／
+          差(攻め−中庸) <b style="color:${abcol}">${abDiff >= 0 ? "+" : ""}${abDiff.toFixed(1)}pt</b></span>
+          <span style="font-size:11px">（採用中の攻めV2と、割安/低ボラを厚くした保守配分を同一スタートから実運用で並走比較中。プラスが続けば攻めV2が有効。${pfB.updated || ""}時点）</span>`;
       }
     } catch (e) {}
     if (pf.open && pf.open.length) {

@@ -1,4 +1,7 @@
 // 毎朝の「展望と考察」自動更新スクリプト（GitHub Actionsで実行）
+// ★アルゴリズムのパラメータ調整は、下記の ALGO ブロックのみを編集すること★
+//   (重み・モメンタム窓・ハードストップ・集中/分散トリム・買いゲート・コスト/税/損益通算・
+//    レバETF除外・セクター/単一銘柄cap を全てALGOに集約。ロジック本体はALGOを参照するだけ。)
 // 1) LLM・有料APIは不使用（0円運用）。無料の株価データのみで毎日更新する
 // 2) 積立4000円は毎日待機資金へ、購入は週1回まとめて複合スコア上位に配分（セクター評価額35%・単一銘柄15%以内・決算±3日回避・買い増しあり）、
 //    売却は暴落ストップ（ピーク比-35%固定・毎日判定）と分散トリム（月1回）のみ（保有期限なし）
@@ -18,6 +21,71 @@ const today = new Date().toLocaleDateString("ja-JP", {
   timeZone: "Asia/Tokyo", year: "numeric", month: "numeric", day: "numeric"
 });
 const todayISO = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" }); // YYYY-MM-DD
+
+// ===================================================================================
+// ===== ALGO: 売買アルゴリズムの全パラメータ集約ブロック =====
+// ===================================================================================
+// ★アルゴリズムを調整するときは、原則このALGOブロックだけを編集すればよい★
+// ロジック本体(scoreAndSelect / simulate / selectPicks 等)は全てここを参照する。
+// 各キーの末尾コメントは研究側 backtest.py の cfg 名との対応表(ライブ⇔バックテストの同期用)。
+const ALGO = {
+  // --- 因子の重み ---------------------------------------------------------------
+  // A系列(採用中チャンピオンV2=価格4因子モメンタム傾斜)。backtest.py cfg: weights(topn12/mom6x版)
+  weights: { momentum: 0.35, trend: 0.25, analystUp: 0, rating: 0, value: 0.22, lowVol: 0.18, quality: 0 },
+  // B系列(影=中庸バランス。割安/低ボラ厚め)。backtest.py cfg: weights(中庸/保守版)
+  weightsB: { momentum: 0.25, trend: 0.20, analystUp: 0, rating: 0, value: 0.30, lowVol: 0.25, quality: 0 },
+
+  // --- モメンタム窓(12-1式) -------------------------------------------------------
+  momExcludeDays: 21,  // 直近何営業日を除外するか(短期リバーサル回避)。backtest.py cfg: mom_skip(=21)
+  momWindowDays: 126,  // モメンタム計測の窓(約6ヶ月)。backtest.py cfg: mom_lookback(=126)
+
+  // --- 低ボラ因子のガード ---------------------------------------------------------
+  volFloor: 0.012,  // これ未満の日次ボラは同扱い(低ボラだけで突出させない)。backtest.py cfg: vol_floor
+  volMin: 0.005,    // これ未満は株ではあり得ない(債券等)として候補から除外。backtest.py cfg: vol_min_guard
+
+  // --- 売却①: 暴落ハードストップ(毎日) -------------------------------------------
+  hardStop: 0.35,   // ピーク比これだけ下落で全売却。backtest.py cfg: hard_stop(=0.35)
+
+  // --- 売却②: 集中ガード/分散トリム(月1回) ---------------------------------------
+  // A(V2): ノーセルの帰結の単一銘柄肥大化だけを月1で抑える。backtest.py cfg: trim_mode="conc", conc_trim
+  concTrim: { threshold: 0.40, target: 0.30 },  // 単一銘柄が総資産の40%超→30%へ部分利確
+  // B(中庸): 従来の分散トリム。backtest.py cfg: trim_mode="diversify"
+  diversifyTrim: { nameHard: 0.20, nameTarget: 0.15, sectorHard: 0.45, sectorTarget: 0.40 },
+  diversifyBaseJPY: 20000,  // 総資産がこれ未満のうちはトリム/シェア判定を緩和(初期の過剰トリム防止)
+
+  // --- 買い付け(積立毎日・購入は週1回) --------------------------------------------
+  buyGateDays: 7,       // 前回買付からこの日数以上で購入実行(=週1)。backtest.py cfg: buy_every_days(=7)
+  lotJPY: 1000,         // 1ロットの金額
+  sectorCap: 0.35,      // 買付時の1セクター評価額シェア上限。backtest.py cfg: sector_cap
+  nameCap: 0.15,        // 買付時の単一銘柄評価額シェア上限。backtest.py cfg: name_cap
+  contributionJPY: 4000,// 毎日の積立額(待機資金へ加算)
+
+  // --- コスト・税 -----------------------------------------------------------------
+  costRate: 0.002,      // 売買コスト片道(手数料+為替スプレッド相当)。backtest.py cfg: cost_bps(=20)
+  taxRate: 0.20315,     // 譲渡益・配当への課税(所得税15%+復興0.315%+住民5%)。backtest.py cfg: tax_rate
+  lossOffset: true,     // 年内損益通算(日本の特定口座準拠。損失で過払い還付)。backtest.py cfg: tax_loss_offset
+
+  // --- レバレッジ型ETFの除外(ユニバースレベル・A/B共通) --------------------------
+  // ブル(レバレッジ)ETFは日次リバランスの減価がノーセル長期保有と致命的に相性が悪く、
+  // バックテストの大型株ユニバースにも含まれないため、倍率調整ではなく完全除外に統一。
+  // 除外は「新規買い」候補からの除外なので、既存保有にレバETFがあっても売却はされず、
+  // 暴落ストップ/集中ガードに掛かるまで従来通り保有され続ける(=新規買い停止・既存はストップまで保有)。
+  // SOXXは非レバの半導体ETFなのでリストに入れない(=除外しない)。backtest.py cfg: exclude_leveraged=True
+  leveragedEtfSymbols: new Set([
+    "TQQQ", "SQQQ", "SOXL", "SOXS", "SPXL", "SPXU", "UPRO", "SDOW", "UDOW",
+    "TECL", "TECS", "FNGU", "FNGD", "QLD", "SSO", "SDS", "QID", "NVDL", "NVDD",
+    "TSLL", "TSLS", "AMDL", "DLLL", "MSFL", "AAPU", "CONL", "BITX", "ETHU",
+    "LABU", "LABD", "TNA", "TZA", "YINN", "YANG"
+  ]),
+  // 名称ベースのレバ系判定(2X/3X/Ultra/UltraPro/Direxion/Daily...Bull|Bear/leveraged)
+  leveragedEtfNameRe: /(\b[23]x\b|２倍|３倍|ultrapro|\bultra\b|direxion|daily.*(bull|bear)|レバレッジ|leveraged|ブル)/i,
+};
+// ETFがレバレッジ型か判定(シンボルの既知レバ系ティック or 名称パターン)。u={name,symbol("MARKET:TICKER")}
+function isLeveragedETF(u) {
+  const ticker = (u.symbol || "").split(":").pop().toUpperCase();
+  if (ALGO.leveragedEtfSymbols.has(ticker)) return true;
+  return ALGO.leveragedEtfNameRe.test(u.name || "");
+}
 
 // ===== 解説生成は廃止（0円運用） =====
 // LLMは使わない。既存のANALYSISブロックの内容を引き継ぎ、picks（注目銘柄）だけを毎日更新する。
@@ -217,6 +285,9 @@ function fundMetrics(rows) {
   const price = closes[closes.length - 1];
   const at = n => closes[Math.max(0, closes.length - 1 - n)];
   const ret = n => { const p0 = at(n); return p0 ? price / p0 - 1 : null; };
+  // 12-1式モメンタム(mom6x=チャンピオンV2): 直近momExcludeDays営業日を除いた約momWindowDays日リターン px[t-skip]/px[t-win]-1。
+  // 直近1ヶ月を除くことで短期リバーサル(高値掴み)を避ける。データ長が足りなければ通常の6ヶ月にフォールバック。(窓はALGO)
+  const ret6x = (closes.length > ALGO.momWindowDays) ? (at(ALGO.momExcludeDays) && at(ALGO.momWindowDays) ? at(ALGO.momExcludeDays) / at(ALGO.momWindowDays) - 1 : null) : ret(126);
   const sma = n => { const s = closes.slice(-n); return s.reduce((a, b) => a + b, 0) / s.length; };
   const win = closes.slice(-252);
   const hi = Math.max(...win), lo = Math.min(...win);
@@ -227,7 +298,7 @@ function fundMetrics(rows) {
   // 高値・安値データがないため、日次騰落率の平均絶対値をATR相当として使う
   const abs = rr.slice(-14).map(x => Math.abs(x));
   const atrRatio = abs.length ? abs.reduce((a, b) => a + b, 0) / abs.length : null;
-  return { price, ret3m: ret(63), ret6m: ret(126), sma50: sma(50), sma200: sma(200),
+  return { price, ret3m: ret(63), ret6m: ret(126), ret6x, sma50: sma(50), sma200: sma(200),
     posInRange: hi > lo ? (price - lo) / (hi - lo) : 0.5, vol, atrRatio };
 }
 async function chartMetrics(sym) {
@@ -253,6 +324,8 @@ async function chartMetrics(sym) {
     if (med && (price > med * 8 || price < med / 8)) return null;
     const at = n => closes[Math.max(0, closes.length - 1 - n)];
     const ret = n => { const p0 = at(n); return p0 ? price / p0 - 1 : null; };
+    // 12-1式モメンタム(mom6x=チャンピオンV2): 直近momExcludeDays営業日を除いた約momWindowDays日。データ不足時は6ヶ月に退避。(窓はALGO)
+    const ret6x = (closes.length > ALGO.momWindowDays) ? (at(ALGO.momExcludeDays) && at(ALGO.momWindowDays) ? at(ALGO.momExcludeDays) / at(ALGO.momWindowDays) - 1 : null) : ret(126);
     const sma = n => { const s = closes.slice(-n); return s.length ? s.reduce((a, b) => a + b, 0) / s.length : null; };
     const win = closes.slice(-252);
     const hi = Math.max(...win), lo = Math.min(...win);
@@ -274,7 +347,7 @@ async function chartMetrics(sym) {
       }
       atrRatio = trs.reduce((a, b) => a + b, 0) / trs.length / price;
     }
-    return { price, ret3m: ret(63), ret6m: ret(126), sma50: sma(50), sma200: sma(200), posInRange, vol, atrRatio };
+    return { price, ret3m: ret(63), ret6m: ret(126), ret6x, sma50: sma(50), sma200: sma(200), posInRange, vol, atrRatio };
   } catch (e) { return null; }
 }
 // Yahoo quoteSummary（cookie+crumb が必要）: セクター・決算日・アナリスト目標を取得
@@ -342,23 +415,22 @@ function zscores(arr) {
   const sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / v.length) || 1;
   return arr.map(x => (x != null && isFinite(x)) ? (x - m) / sd : null);
 }
-// バックテスト(2024-05〜2026-07・独立半期OOS)で、価格因子はvalue/lowVol偏重→momentum/trend寄りが前後半とも指数超え、
-// value/lowVol偏重は両半期で指数負けと判明。中庸傾斜としてmomentum/trendを増やしvalue/lowVol/quality/ratingを削減。
-const WEIGHTS = { momentum: 0.20, trend: 0.15, analystUp: 0.15, rating: 0.05, value: 0.16, lowVol: 0.11, quality: 0.18 };
-// フォワードA/B検証: A(あり)=上のWEIGHTS(quality/analyst/rating込み7因子)。B(なし)=価格4因子のみ(quality/analystUp/rating=0)。
-// ROE/アナリスト評価は無料データでは過去検証不能(先読み)なので、実運用で並走させて本当に効くか日次で記録する。
-const WEIGHTS_B = { momentum: 0.20, trend: 0.15, analystUp: 0, rating: 0, value: 0.16, lowVol: 0.11, quality: 0 };
+// ★チャンピオンV2(バックテスト検証済み・A=主系列): 価格4因子のモメンタム傾斜 {mom6x:.35, trend:.25, value:.22, lowvol:.18}。
+// 大箱473-907銘柄・動的ユニバースで対ベンチ勝率88-100%、6種の頑健性テスト(箱サイズ/ランダム抽出/コスト/重みpert/独立半期OOS/勝ち組除外)を全通過。
+// mom6xは12-1式(直近1ヶ月除外)で6M rank IC=+0.087の本物の信号。代償は最大DD -38〜-43%。quality/analystUp/rating=0(無料データでは先読みで過去検証不能)。
+// 重み・窓・ボラガードは全てALGOブロックに集約済み(下は参照エイリアス)。
+const WEIGHTS = ALGO.weights;    // A系列(採用中V2)
+const WEIGHTS_B = ALGO.weightsB; // B系列(影=中庸)
 let ACTIVE_WEIGHTS = WEIGHTS;   // scoreAndSelect が参照する重み（A/Bで切替）
 let ACTIVE_PF_FILE = PF_FILE;   // heldSymbols が参照するポートフォリオ（A/Bで切替）
-// 低ボラ因子の下限: これ未満の日次ボラ（債券・現金同等ETF等）は同じ扱いにし、"低ボラなだけ"で突出させない
-const VOL_FLOOR = 0.012;
-// これ未満の日次ボラは株ではあり得ない（債券・現金同等）とみなし、注目銘柄から除外する定量ガード
-const VOL_MIN = 0.005;
+const VOL_FLOOR = ALGO.volFloor; // 低ボラ下限(これ未満は同扱い)
+const VOL_MIN = ALGO.volMin;     // 株ではあり得ない低ボラ(債券等)は候補から除外する定量ガード
 const isFinancial = c => /金融|Financial/i.test(c.sectorName || c.sector || "");
 function scoreAndSelect(cands, opts) {
   const maxPerSector = (opts && opts.maxPerSector) || 2;
   const topN = (opts && opts.topN) || 4;
-  const mom = cands.map(c => (c.ret3m != null && c.ret6m != null) ? 0.5 * c.ret3m + 0.5 * c.ret6m : null);
+  // モメンタム=チャンピオンV2のmom6x(12-1式=直近21営業日除外の約6ヶ月)。ret6xが取れない銘柄は従来の3/6ヶ月ブレンドに退避。
+  const mom = cands.map(c => (c.ret6x != null) ? c.ret6x : ((c.ret3m != null && c.ret6m != null) ? 0.5 * c.ret3m + 0.5 * c.ret6m : null));
   const up = cands.map(c => c.analystUp != null ? c.analystUp : null);
   const val = cands.map(c => c.posInRange != null ? (1 - c.posInRange) : null);
   const vol = cands.map(c => c.vol != null ? Math.max(c.vol, VOL_FLOOR) : null);
@@ -568,6 +640,7 @@ async function adoptWithConstraints(ranked) {
       const lev = c.lev || 1;
       if (m.ret3m != null) c.ret3m = m.ret3m / lev;
       if (m.ret6m != null) c.ret6m = m.ret6m / lev;
+      if (m.ret6x != null) c.ret6x = m.ret6x / lev;
       if (m.sma50 != null) c.sma50 = m.sma50;
       if (m.sma200 != null) c.sma200 = m.sma200;
       if (m.posInRange != null) c.posInRange = m.posInRange;
@@ -618,18 +691,20 @@ async function selectPicks() {
     const mc = d.marketCap || (u.etf ? (d.netAssets || 0) : 0), vol = d.averageDailyVolume3Month || d.regularMarketVolume || 0;
     const jpy = d.currency === "JPY";
     if (!u.etf && mc < (jpy ? 2e11 : 2e9)) continue; // 株式: 時価総額 約2000億円 / 20億ドル 以上
-    // インバース（ベア）型ETFは除外。ブル（レバレッジ）型は倍率でモメンタムを割って公平に比較
-    // （倍率調整により、同じ指数ならレバなし版よりも減価の分だけ自然に不利になる）
+    // ETFのフィルタ: インバース(ベア)型・レバレッジ(ブル)型・債券系はユニバースから除外。
+    // レバレッジ型を「新規買い」の候補から外すことで、事実上「新規買い停止・既存はストップまで保有」
+    // という挙動になる(既存保有にレバETFがあっても、この選定は新規候補のみを対象にするため売却はされず、
+    // 暴落ストップ/集中ガードに掛かるまで従来通り保有され続ける)。A系列(V2)・B系列とも共通。
     let lev = 1;
     if (u.etf) {
       const nm = u.name || "";
       if (/(inverse|インバース|ベア|\bbear\b|\bshort\b|-1x)/i.test(nm)) continue;
+      // ブル(レバレッジ)型ETFはシンボル/名称ベースで完全除外(倍率調整はやめて統一)。
+      if (isLeveragedETF(u)) continue;
       // 債券・国債・現金同等（マネーマーケット等）ETFは株の「注目銘柄」に馴染まないため除外。
       // スクリーナーの銘柄名は途中で切れることがある（"...Investment Gra"）ので、満期レンジ表記や
       // "investment gra"/"corporate" 等の断片でも拾えるようにする。
       if (/bond|treasury|t-bill|gilt|bund|\bjgb\b|municipal|aggregate|fixed income|money market|ultrashort|\btips\b|investment gra|corporate|\d\s*[-–]\s*\d+\s*year|\d+\s*\+\s*year|債券|国債|公社債/i.test(nm)) continue;
-      if (/(3x|３倍|ultrapro)/i.test(nm)) lev = 3;
-      else if (/(2x|２倍|レバレッジ|\bultra\b|ブル|\bbull\b|leveraged)/i.test(nm)) lev = 2;
     }
     if (price * vol < (jpy ? 1e9 : 1e7)) continue;   // 1日売買代金 約10億円 / 1000万ドル 以上
     cands.push({
@@ -682,7 +757,7 @@ async function toJPY(q) {
   return q.price * usdjpy;
 }
 
-// ===== 積立シミュレーション更新（A/B並走: A=あり(7因子) / B=なし(価格4因子)）=====
+// ===== 積立シミュレーション更新（A/B並走: A=チャンピオンV2(攻め・ノーセル＋集中ガード) / B=中庸(割安/低ボラ厚め・分散トリムあり)）=====
 async function simulate(pfFile, weights, primary) {
  ACTIVE_WEIGHTS = weights; ACTIVE_PF_FILE = pfFile;
  let picks = [];
@@ -702,8 +777,10 @@ async function simulate(pfFile, weights, primary) {
     try { priceJPY[s] = await toJPY(await yQuote(s)); } catch (e) { console.log("価格取得失敗:", s, e.message); }
   }
 
-  const TAX_RATE = 0.20315; // 譲渡益・配当への課税（所得税15%＋復興0.315%＋住民5%）
-  const COST_RATE = 0.002;  // 売買コスト（片道0.2%：手数料＋為替スプレッド相当）
+  const TAX_RATE = ALGO.taxRate;  // 譲渡益・配当への課税（ALGO集約）
+  const COST_RATE = ALGO.costRate; // 売買コスト片道（ALGO集約）
+  // T2集中ガード(A系列=V2のみ): ノーセルの帰結で単一銘柄が肥大化するのを月1回だけ抑える。調整はALGO.concTrim。
+  const CONC_TRIM = ALGO.concTrim;
 
   // ===== 配当・株式分割の反映（必ず売却判定の前に処理する）=====
   // 分割: 口数・取得単価・ピークを比率調整（未対応だと分割時に評価額が急落し誤売却するため）。
@@ -751,7 +828,21 @@ async function simulate(pfFile, weights, primary) {
     const fee = Math.round(v * COST_RATE * 10) / 10;
     const costPortion = pos.costJPY * (sellUnits / pos.units);
     const gain = v - costPortion;
-    const tax = gain > 0 ? Math.round(gain * TAX_RATE * 10) / 10 : 0; // 利益にのみ課税（簡易・損益通算なし）
+    // 課税: ALGO.lossOffset=true なら年内損益通算(日本の特定口座の実制度寄り)。配当は対象外。
+    let tax;
+    if (ALGO.lossOffset) {
+      // 暦年が変わったらリセット。年内の累積実現損益に対する課税額と、これまで課税済みの額との差分だけを
+      // 今回課税する（後から損失が出れば負のtax＝過払い分の還付になる）。
+      const taxYear = todayISO.slice(0, 4);
+      if (pf.taxYear !== taxYear) { pf.taxYear = taxYear; pf.ytdRealizedJPY = 0; pf.ytdTaxPaidJPY = 0; }
+      pf.ytdRealizedJPY = Math.round(((pf.ytdRealizedJPY || 0) + gain) * 10) / 10;
+      const owed = Math.max(0, pf.ytdRealizedJPY) * TAX_RATE;
+      tax = Math.round((owed - (pf.ytdTaxPaidJPY || 0)) * 10) / 10; // 損失計上時は負（＝過払い還付）になり得る
+      pf.ytdTaxPaidJPY = Math.round(((pf.ytdTaxPaidJPY || 0) + tax) * 10) / 10;
+    } else {
+      // 通算なし: 各売却の利益にだけ課税(損失は0扱い・還付なし)。
+      tax = Math.round(Math.max(0, gain) * TAX_RATE * 10) / 10;
+    }
     const net = Math.round((v - fee - tax) * 10) / 10;
     pf.realizedJPY += net;
     pf.taxPaidJPY = Math.round((pf.taxPaidJPY + tax) * 10) / 10;
@@ -768,7 +859,7 @@ async function simulate(pfFile, weights, primary) {
 
   // ① 暴落限定ストップ（ピーク比 -35%固定）。日次ATRトレーリング(12〜28%)はバックテストで上昇相場の
   //    「押し目売り→高値買い直し→課税」whipsawがnet有害(費用の大半)と判明したため、大暴落だけ拾う広い固定%に置換。
-  const HARD_STOP = 0.35;
+  const HARD_STOP = ALGO.hardStop; // ピーク比の暴落ストップ率（ALGO集約）
   let still = [];
   for (const pos of pf.open) {
     const pj = priceJPY[pos.symbol];
@@ -780,12 +871,13 @@ async function simulate(pfFile, weights, primary) {
   }
   pf.open = still;
 
-  // ② 分散トリム（月1回）: 値上がりで肥大化した銘柄/セクターを上限まで一部利確（35%/15%の分散を維持）。
-  // バックテストで日次トリムより月次の方が税・手数料が減りDDは同等と判明。旧③スコア悪化エグジットは撤去済み。
+  // ② 月次の肥大化抑制（月1回）。売却は通常の実現損益処理(realizeSell)を通すので税・年内通算・手数料が正しく計上される。
+  //   A(主系列=V2): 月次トリムは廃止(ノーセル)。単一銘柄がCONC_TRIM.threshold超のときだけtargetまで部分売却するT2集中ガードのみ。
+  //   B(影=中庸): 従来の分散トリム(単一銘柄20%→15%・セクター45%→40%)を維持し、旧デプロイ相当との継続比較を成立させる。
   const doTrim = (pf.lastTrimMonth !== todayISO.slice(0, 7));
   if (doTrim) pf.lastTrimMonth = todayISO.slice(0, 7);
   if (doTrim) {
-    const NAME_HARD = 0.20, NAME_TGT = 0.15, SECTOR_HARD = 0.45, SECTOR_TGT = 0.40, DIVERSIFY_BASE = 20000;
+    const DIVERSIFY_BASE = ALGO.diversifyBaseJPY;
     const cvOf = p => { const pj = priceJPY[p.symbol]; return pj != null ? p.units * pj : 0; };
     const priced = () => pf.open.filter(p => priceJPY[p.symbol] != null);
     // 分母は総資産（保有＋待機資金）。ただし規模が小さいうちは DIVERSIFY_BASE で緩和（保有数が少ない初期に過剰トリムしない）。
@@ -802,14 +894,23 @@ async function simulate(pfFile, weights, primary) {
         sellVal -= take;
       }
     };
-    // 単一銘柄（総資産比で20%超→15%へ）
-    let total = portTotal();
-    const bySym = {}; for (const p of priced()) (bySym[p.symbol] = bySym[p.symbol] || []).push(p);
-    for (const sym in bySym) trimGroup(bySym[sym], bySym[sym].reduce((s, p) => s + cvOf(p), 0), total, NAME_HARD, NAME_TGT, `分散トリム(単一銘柄${NAME_HARD * 100}%超)`);
-    // セクター（総資産比で45%超→40%へ。銘柄トリム後の各セクター値で判定）
-    total = portTotal();
-    const bySec = {}; for (const p of priced()) { const b = sectorBucket(p.sector); (bySec[b] = bySec[b] || []).push(p); }
-    for (const b in bySec) trimGroup(bySec[b], bySec[b].reduce((s, p) => s + cvOf(p), 0), total, SECTOR_HARD, SECTOR_TGT, `分散トリム(${b}が${SECTOR_HARD * 100}%超)`);
+    if (primary) {
+      // T2集中ガード（単一銘柄が総資産比 threshold 超 → target へ部分売却）。セクター/月次分散トリムは行わない。
+      const total = portTotal();
+      const bySym = {}; for (const p of priced()) (bySym[p.symbol] = bySym[p.symbol] || []).push(p);
+      for (const sym in bySym) trimGroup(bySym[sym], bySym[sym].reduce((s, p) => s + cvOf(p), 0), total,
+        CONC_TRIM.threshold, CONC_TRIM.target, `集中ガード(単一銘柄${Math.round(CONC_TRIM.threshold * 100)}%超→${Math.round(CONC_TRIM.target * 100)}%)`);
+    } else {
+      // B(中庸): 従来の分散トリム（単一銘柄20%→15%・セクター45%→40%）。値はALGO.diversifyTrim。
+      const NAME_HARD = ALGO.diversifyTrim.nameHard, NAME_TGT = ALGO.diversifyTrim.nameTarget,
+            SECTOR_HARD = ALGO.diversifyTrim.sectorHard, SECTOR_TGT = ALGO.diversifyTrim.sectorTarget;
+      let total = portTotal();
+      const bySym = {}; for (const p of priced()) (bySym[p.symbol] = bySym[p.symbol] || []).push(p);
+      for (const sym in bySym) trimGroup(bySym[sym], bySym[sym].reduce((s, p) => s + cvOf(p), 0), total, NAME_HARD, NAME_TGT, `分散トリム(単一銘柄${NAME_HARD * 100}%超)`);
+      total = portTotal();
+      const bySec = {}; for (const p of priced()) { const b = sectorBucket(p.sector); (bySec[b] = bySec[b] || []).push(p); }
+      for (const b in bySec) trimGroup(bySec[b], bySec[b].reduce((s, p) => s + cvOf(p), 0), total, SECTOR_HARD, SECTOR_TGT, `分散トリム(${b}が${SECTOR_HARD * 100}%超)`);
+    }
   }
   pf.open = pf.open.filter(p => p.units > 1e-9); // 端数で0になったポジションを除去
 
@@ -818,14 +919,14 @@ async function simulate(pfFile, weights, primary) {
   // 購入は週1回、貯まった待機資金をまとめて配分。バックテストで、日次でスコア上位を追い続けるより
   // 週次でまとめ買う方が高値掴み・即トリムのchurnが減り、買い曜日に依らず安定して優位と判明したため。
   if (pf.lastContribDate !== todayISO) {
-    pf.cashJPY = Math.round(((pf.cashJPY || 0) + 4000) * 10) / 10;
-    pf.investedJPY += 4000;                      // 新規入金分のみ（毎日計上・再投資分は二重計上しない）
+    pf.cashJPY = Math.round(((pf.cashJPY || 0) + ALGO.contributionJPY) * 10) / 10;
+    pf.investedJPY += ALGO.contributionJPY;      // 新規入金分のみ（毎日計上・再投資分は二重計上しない）
     pf.lastContribDate = todayISO;
   }
   let boughtToday = null;
   const daysSinceBuy = pf.lastBuyDate ? (new Date(todayISO) - new Date(pf.lastBuyDate)) / 86400000 : 999;
-  if (daysSinceBuy >= 7 && pf.lastBuyDate !== todayISO) {  // 前回買付から7日以上＝週1回。休みで飛んでも次の実行日にまとめて投下
-    const LOT = 1000, SECTOR_CAP = 0.35, NAME_CAP = 0.15, DIVERSIFY_BASE = 20000;
+  if (daysSinceBuy >= ALGO.buyGateDays && pf.lastBuyDate !== todayISO) {  // 前回買付からbuyGateDays日以上＝週1回。休みで飛んでも次の実行日にまとめて投下
+    const LOT = ALGO.lotJPY, SECTOR_CAP = ALGO.sectorCap, NAME_CAP = ALGO.nameCap, DIVERSIFY_BASE = ALGO.diversifyBaseJPY;
     let cash = (pf.cashJPY || 0);                // 4000は上の積立で加算済み
     const curVal = p => { const pj = priceJPY[p.symbol]; return pj != null ? p.units * pj : p.costJPY; };
     let total = pf.open.reduce((s, p) => s + curVal(p), 0);
@@ -938,8 +1039,8 @@ try {
   if (baseA.B) { fs.writeFileSync("portfolio_b.json", JSON.stringify(baseA.B, null, 2)); delete baseA.B; fs.writeFileSync(PF_FILE, JSON.stringify(baseA, null, 2)); }
   else fs.copyFileSync(PF_FILE, "portfolio_b.json");
 } catch (e) { try { fs.copyFileSync(PF_FILE, "portfolio_b.json"); } catch (e2) {} }
-await simulate(PF_FILE, WEIGHTS, true);              // A: あり（quality/analyst込み7因子）
-await simulate("portfolio_b.json", WEIGHTS_B, false); // B: なし（価格4因子のみ）
+await simulate(PF_FILE, WEIGHTS, true);              // A: チャンピオンV2（攻め価格4因子・ノーセル＋T2集中ガード・税ロス通算）
+await simulate("portfolio_b.json", WEIGHTS_B, false); // B: 中庸（割安/低ボラ厚め・従来の分散トリムあり・税ロス通算）＝旧デプロイ相当との継続比較
 try {  // B を portfolio.json の .B に埋め込む（portfolio.json のコミットだけでBも永続化される）
   const a = JSON.parse(fs.readFileSync(PF_FILE, "utf8"));
   a.B = JSON.parse(fs.readFileSync("portfolio_b.json", "utf8"));
