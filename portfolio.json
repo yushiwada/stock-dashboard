@@ -1,5 +1,5 @@
 {
-  "investedJPY": 8000,
+  "investedJPY": 12000,
   "realizedJPY": 0,
   "taxPaidJPY": 0,
   "open": [
@@ -12,8 +12,8 @@
       "buyPriceJPY": 1484,
       "peakJPY": 1484,
       "costJPY": 1000,
-      "curValueJPY": 983.2,
-      "actionsThru": "2026-07-10",
+      "curValueJPY": 999.3,
+      "actionsThru": "2026-07-13",
       "trailPct": 35
     },
     {
@@ -25,8 +25,8 @@
       "buyPriceJPY": 153935.21,
       "peakJPY": 160388.84524000002,
       "costJPY": 1000,
-      "curValueJPY": 1041.9,
-      "actionsThru": "2026-07-10",
+      "curValueJPY": 1031.3,
+      "actionsThru": "2026-07-13",
       "trailPct": 35
     },
     {
@@ -36,10 +36,10 @@
       "buyDate": "2026-07-09",
       "units": 0.06933999443274733,
       "buyPriceJPY": 14421.69,
-      "peakJPY": 14421.691379999998,
+      "peakJPY": 14532.8029,
       "costJPY": 1000,
-      "curValueJPY": 996,
-      "actionsThru": "2026-07-10",
+      "curValueJPY": 1007.7,
+      "actionsThru": "2026-07-13",
       "trailPct": 35
     },
     {
@@ -51,27 +51,27 @@
       "buyPriceJPY": 78130,
       "peakJPY": 83250,
       "costJPY": 1000,
-      "curValueJPY": 1065.5,
-      "actionsThru": "2026-07-10",
+      "curValueJPY": 926,
+      "actionsThru": "2026-07-13",
       "trailPct": 35
     }
   ],
   "closed": [],
   "lastBuyDate": "2026-07-09",
-  "cashJPY": 4000,
+  "cashJPY": 8000,
   "benchmark": {
     "symbol": "FUND:0331418A",
     "name": "オルカン（eMAXIS Slim 全世界株式）",
-    "investedJPY": 8000,
-    "units": 0.20926042533075034,
-    "lastBuyDate": "2026-07-10",
+    "investedJPY": 12000,
+    "units": 0.3136064367044656,
+    "lastBuyDate": "2026-07-13",
     "startDate": "2026-07-09",
-    "lastPriceJPY": 38161,
-    "navDate": "2026-07-09",
-    "valuationJPY": 7985.6
+    "lastPriceJPY": 38334,
+    "navDate": "2026-07-10",
+    "valuationJPY": 12021.8
   },
-  "valuationJPY": 8086.6,
-  "updated": "2026-07-10",
+  "valuationJPY": 11964.3,
+  "updated": "2026-07-13",
   "history": [
     {
       "date": "2026-07-09",
@@ -86,10 +86,119 @@
       "val": 8086.6,
       "bInv": 8000,
       "bVal": 7985.6
+    },
+    {
+      "date": "2026-07-13",
+      "inv": 12000,
+      "val": 11964.3,
+      "bInv": 12000,
+      "bVal": 12021.8
     }
   ],
   "feesPaidJPY": 0,
   "dividendsJPY": 0,
   "lastTrimMonth": "2026-07",
-  "lastContribDate": "2026-07-10"
+  "lastContribDate": "2026-07-13",
+  "B": {
+    "investedJPY": 12000,
+    "realizedJPY": 0,
+    "taxPaidJPY": 0,
+    "open": [
+      {
+        "symbol": "TSE:2726",
+        "name": "PAL GROUP HOLDINGS CO LTD",
+        "sector": "Consumer Cyclical",
+        "buyDate": "2026-07-09",
+        "units": 0.6738544474393531,
+        "buyPriceJPY": 1484,
+        "peakJPY": 1484,
+        "costJPY": 1000,
+        "curValueJPY": 997.3,
+        "actionsThru": "2026-07-13",
+        "trailPct": 35
+      },
+      {
+        "symbol": "NASDAQ:MU",
+        "name": "Micron Technology, Inc.",
+        "sector": "Technology",
+        "buyDate": "2026-07-09",
+        "units": 0.006496239571170858,
+        "buyPriceJPY": 153935.21,
+        "peakJPY": 160388.84524000002,
+        "costJPY": 1000,
+        "curValueJPY": 1031.3,
+        "actionsThru": "2026-07-13",
+        "trailPct": 35
+      },
+      {
+        "symbol": "NASDAQ:TRI",
+        "name": "Thomson Reuters Corp",
+        "sector": "Industrials",
+        "buyDate": "2026-07-09",
+        "units": 0.06933999443274733,
+        "buyPriceJPY": 14421.69,
+        "peakJPY": 14532.8029,
+        "costJPY": 1000,
+        "curValueJPY": 1007.7,
+        "actionsThru": "2026-07-13",
+        "trailPct": 35
+      },
+      {
+        "symbol": "TSE:285A",
+        "name": "KIOXIA HOLDINGS CORPORATION",
+        "sector": "Technology",
+        "buyDate": "2026-07-09",
+        "units": 0.012799180852425445,
+        "buyPriceJPY": 78130,
+        "peakJPY": 83250,
+        "costJPY": 1000,
+        "curValueJPY": 923.8,
+        "actionsThru": "2026-07-13",
+        "trailPct": 35
+      }
+    ],
+    "closed": [],
+    "lastBuyDate": "2026-07-09",
+    "cashJPY": 8000,
+    "benchmark": {
+      "symbol": "FUND:0331418A",
+      "name": "オルカン（eMAXIS Slim 全世界株式）",
+      "investedJPY": 12000,
+      "units": 0.3136064367044656,
+      "lastBuyDate": "2026-07-13",
+      "startDate": "2026-07-09",
+      "lastPriceJPY": 38334,
+      "navDate": "2026-07-10",
+      "valuationJPY": 12021.8
+    },
+    "valuationJPY": 11960.1,
+    "updated": "2026-07-13",
+    "history": [
+      {
+        "date": "2026-07-09",
+        "inv": 4000,
+        "val": 4000,
+        "bInv": 4000,
+        "bVal": 4000
+      },
+      {
+        "date": "2026-07-10",
+        "inv": 8000,
+        "val": 8086.6,
+        "bInv": 8000,
+        "bVal": 7985.6
+      },
+      {
+        "date": "2026-07-13",
+        "inv": 12000,
+        "val": 11960.1,
+        "bInv": 12000,
+        "bVal": 12021.8
+      }
+    ],
+    "feesPaidJPY": 0,
+    "dividendsJPY": 0,
+    "lastTrimMonth": "2026-07",
+    "lastContribDate": "2026-07-13"
+  }
 }
