@@ -1,5 +1,5 @@
 {
-  "investedJPY": 16000,
+  "investedJPY": 20000,
   "realizedJPY": 0,
   "taxPaidJPY": 0,
   "open": [
@@ -12,8 +12,8 @@
       "buyPriceJPY": 1484,
       "peakJPY": 1484,
       "costJPY": 1000,
-      "curValueJPY": 992.6,
-      "actionsThru": "2026-07-14",
+      "curValueJPY": 979.1,
+      "actionsThru": "2026-07-15",
       "trailPct": 35
     },
     {
@@ -25,8 +25,8 @@
       "buyPriceJPY": 153935.21,
       "peakJPY": 160388.84524000002,
       "costJPY": 1000,
-      "curValueJPY": 988.3,
-      "actionsThru": "2026-07-14",
+      "curValueJPY": 1035.2,
+      "actionsThru": "2026-07-15",
       "trailPct": 35
     },
     {
@@ -38,8 +38,8 @@
       "buyPriceJPY": 14421.69,
       "peakJPY": 15308.735820000002,
       "costJPY": 1000,
-      "curValueJPY": 1061.5,
-      "actionsThru": "2026-07-14",
+      "curValueJPY": 1031.1,
+      "actionsThru": "2026-07-15",
       "trailPct": 35
     },
     {
@@ -51,27 +51,27 @@
       "buyPriceJPY": 78130,
       "peakJPY": 83250,
       "costJPY": 1000,
-      "curValueJPY": 844,
-      "actionsThru": "2026-07-14",
+      "curValueJPY": 928.6,
+      "actionsThru": "2026-07-15",
       "trailPct": 35
     }
   ],
   "closed": [],
   "lastBuyDate": "2026-07-09",
-  "cashJPY": 12000,
+  "cashJPY": 16000,
   "benchmark": {
     "symbol": "FUND:0331418A",
     "name": "オルカン（eMAXIS Slim 全世界株式）",
-    "investedJPY": 16000,
-    "units": 0.4176863700933082,
-    "lastBuyDate": "2026-07-14",
+    "investedJPY": 20000,
+    "units": 0.5224066360827838,
+    "lastBuyDate": "2026-07-15",
     "startDate": "2026-07-09",
-    "lastPriceJPY": 38432,
-    "navDate": "2026-07-13",
-    "valuationJPY": 16052.5
+    "lastPriceJPY": 38197,
+    "navDate": "2026-07-14",
+    "valuationJPY": 19954.4
   },
-  "valuationJPY": 15886.4,
-  "updated": "2026-07-14",
+  "valuationJPY": 19974,
+  "updated": "2026-07-15",
   "history": [
     {
       "date": "2026-07-09",
@@ -100,14 +100,21 @@
       "val": 15886.4,
       "bInv": 16000,
       "bVal": 16052.5
+    },
+    {
+      "date": "2026-07-15",
+      "inv": 20000,
+      "val": 19974,
+      "bInv": 20000,
+      "bVal": 19954.4
     }
   ],
   "feesPaidJPY": 0,
   "dividendsJPY": 0,
   "lastTrimMonth": "2026-07",
-  "lastContribDate": "2026-07-14",
+  "lastContribDate": "2026-07-15",
   "B": {
-    "investedJPY": 16000,
+    "investedJPY": 20000,
     "realizedJPY": 0,
     "taxPaidJPY": 0,
     "open": [
@@ -120,8 +127,8 @@
         "buyPriceJPY": 1484,
         "peakJPY": 1484,
         "costJPY": 1000,
-        "curValueJPY": 992.6,
-        "actionsThru": "2026-07-14",
+        "curValueJPY": 978.4,
+        "actionsThru": "2026-07-15",
         "trailPct": 35
       },
       {
@@ -133,8 +140,8 @@
         "buyPriceJPY": 153935.21,
         "peakJPY": 160388.84524000002,
         "costJPY": 1000,
-        "curValueJPY": 988.3,
-        "actionsThru": "2026-07-14",
+        "curValueJPY": 1035.2,
+        "actionsThru": "2026-07-15",
         "trailPct": 35
       },
       {
@@ -146,8 +153,8 @@
         "buyPriceJPY": 14421.69,
         "peakJPY": 15308.735820000002,
         "costJPY": 1000,
-        "curValueJPY": 1061.5,
-        "actionsThru": "2026-07-14",
+        "curValueJPY": 1031.1,
+        "actionsThru": "2026-07-15",
         "trailPct": 35
       },
       {
@@ -159,27 +166,27 @@
         "buyPriceJPY": 78130,
         "peakJPY": 83250,
         "costJPY": 1000,
-        "curValueJPY": 842.8,
-        "actionsThru": "2026-07-14",
+        "curValueJPY": 926.4,
+        "actionsThru": "2026-07-15",
         "trailPct": 35
       }
     ],
     "closed": [],
     "lastBuyDate": "2026-07-09",
-    "cashJPY": 12000,
+    "cashJPY": 16000,
     "benchmark": {
       "symbol": "FUND:0331418A",
       "name": "オルカン（eMAXIS Slim 全世界株式）",
-      "investedJPY": 16000,
-      "units": 0.4176863700933082,
-      "lastBuyDate": "2026-07-14",
+      "investedJPY": 20000,
+      "units": 0.5224066360827838,
+      "lastBuyDate": "2026-07-15",
       "startDate": "2026-07-09",
-      "lastPriceJPY": 38432,
-      "navDate": "2026-07-13",
-      "valuationJPY": 16052.5
+      "lastPriceJPY": 38197,
+      "navDate": "2026-07-14",
+      "valuationJPY": 19954.4
     },
-    "valuationJPY": 15885.2,
-    "updated": "2026-07-14",
+    "valuationJPY": 19971.1,
+    "updated": "2026-07-15",
     "history": [
       {
         "date": "2026-07-09",
@@ -208,11 +215,18 @@
         "val": 15885.2,
         "bInv": 16000,
         "bVal": 16052.5
+      },
+      {
+        "date": "2026-07-15",
+        "inv": 20000,
+        "val": 19971.1,
+        "bInv": 20000,
+        "bVal": 19954.4
       }
     ],
     "feesPaidJPY": 0,
     "dividendsJPY": 0,
     "lastTrimMonth": "2026-07",
-    "lastContribDate": "2026-07-14"
+    "lastContribDate": "2026-07-15"
   }
 }
