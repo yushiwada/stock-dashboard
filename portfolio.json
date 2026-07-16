@@ -1,5 +1,5 @@
 {
-  "investedJPY": 20000,
+  "investedJPY": 24000,
   "realizedJPY": 0,
   "taxPaidJPY": 0,
   "open": [
@@ -12,8 +12,8 @@
       "buyPriceJPY": 1484,
       "peakJPY": 1484,
       "costJPY": 1000,
-      "curValueJPY": 979.1,
-      "actionsThru": "2026-07-15",
+      "curValueJPY": 967.7,
+      "actionsThru": "2026-07-16",
       "trailPct": 35
     },
     {
@@ -25,8 +25,8 @@
       "buyPriceJPY": 153935.21,
       "peakJPY": 160388.84524000002,
       "costJPY": 1000,
-      "curValueJPY": 1035.2,
-      "actionsThru": "2026-07-15",
+      "curValueJPY": 952.1,
+      "actionsThru": "2026-07-16",
       "trailPct": 35
     },
     {
@@ -36,10 +36,10 @@
       "buyDate": "2026-07-09",
       "units": 0.06933999443274733,
       "buyPriceJPY": 14421.69,
-      "peakJPY": 15308.735820000002,
+      "peakJPY": 15480.16529,
       "costJPY": 1000,
-      "curValueJPY": 1031.1,
-      "actionsThru": "2026-07-15",
+      "curValueJPY": 1073.4,
+      "actionsThru": "2026-07-16",
       "trailPct": 35
     },
     {
@@ -51,27 +51,147 @@
       "buyPriceJPY": 78130,
       "peakJPY": 83250,
       "costJPY": 1000,
-      "curValueJPY": 928.6,
-      "actionsThru": "2026-07-15",
+      "curValueJPY": 822.2,
+      "actionsThru": "2026-07-16",
       "trailPct": 35
+    },
+    {
+      "symbol": "NASDAQ:DLLL",
+      "name": "GraniteShares 2x Long DELL Dail",
+      "sector": "ETF",
+      "buyDate": "2026-07-16",
+      "units": 0.8385144484819508,
+      "buyPriceJPY": 3570.6,
+      "peakJPY": 3570.6003700000006,
+      "costJPY": 3000,
+      "actionsThru": "2026-07-16",
+      "curValueJPY": 2994
+    },
+    {
+      "symbol": "TSE:285A",
+      "name": "KIOXIA HOLDINGS CORPORATION",
+      "sector": "Technology",
+      "buyDate": "2026-07-16",
+      "units": 0.03107098381070984,
+      "buyPriceJPY": 64240,
+      "peakJPY": 64240,
+      "costJPY": 2000,
+      "actionsThru": "2026-07-16",
+      "curValueJPY": 1996
+    },
+    {
+      "symbol": "TSE:6976",
+      "name": "TAIYO YUDEN CO LTD",
+      "sector": "Technology",
+      "buyDate": "2026-07-16",
+      "units": 0.0774243599689682,
+      "buyPriceJPY": 12890,
+      "peakJPY": 12890,
+      "costJPY": 1000,
+      "actionsThru": "2026-07-16",
+      "curValueJPY": 998
+    },
+    {
+      "symbol": "NASDAQ:MULL",
+      "name": "GraniteShares 2x Long MU Daily ",
+      "sector": "ETF",
+      "buyDate": "2026-07-16",
+      "units": 0.8516585200579704,
+      "buyPriceJPY": 3515.49,
+      "peakJPY": 3515.4935100000002,
+      "costJPY": 3000,
+      "actionsThru": "2026-07-16",
+      "curValueJPY": 2994
+    },
+    {
+      "symbol": "NASDAQ:AMDL",
+      "name": "GraniteShares 2x Long AMD Daily",
+      "sector": "ETF",
+      "buyDate": "2026-07-16",
+      "units": 0.2769486251882665,
+      "buyPriceJPY": 10810.67,
+      "peakJPY": 10810.669300000001,
+      "costJPY": 3000,
+      "actionsThru": "2026-07-16",
+      "curValueJPY": 2994
+    },
+    {
+      "symbol": "NASDAQ:SNDK",
+      "name": "Sandisk Corporation",
+      "sector": "Technology",
+      "buyDate": "2026-07-16",
+      "units": 0.0038126879876279416,
+      "buyPriceJPY": 261757.59,
+      "peakJPY": 261757.58500000002,
+      "costJPY": 1000,
+      "actionsThru": "2026-07-16",
+      "curValueJPY": 998
+    },
+    {
+      "symbol": "TSE:2726",
+      "name": "PAL GROUP HOLDINGS CO LTD",
+      "sector": "Consumer Cyclical",
+      "buyDate": "2026-07-16",
+      "units": 1.3899721448467968,
+      "buyPriceJPY": 1436,
+      "peakJPY": 1436,
+      "costJPY": 2000,
+      "actionsThru": "2026-07-16",
+      "curValueJPY": 1996
+    },
+    {
+      "symbol": "NYSE:DELL",
+      "name": "Dell Technologies Inc.",
+      "sector": "Technology",
+      "buyDate": "2026-07-16",
+      "units": 0.014920740283074357,
+      "buyPriceJPY": 66886.76,
+      "peakJPY": 66886.76172000001,
+      "costJPY": 1000,
+      "actionsThru": "2026-07-16",
+      "curValueJPY": 998
+    },
+    {
+      "symbol": "NASDAQ:TRI",
+      "name": "Thomson Reuters Corp",
+      "sector": "Industrials",
+      "buyDate": "2026-07-16",
+      "units": 0.1289391917080751,
+      "buyPriceJPY": 15480.17,
+      "peakJPY": 15480.16529,
+      "costJPY": 2000,
+      "actionsThru": "2026-07-16",
+      "curValueJPY": 1996
+    },
+    {
+      "symbol": "TSE:6981",
+      "name": "MURATA MANUFACTURING CO",
+      "sector": "Technology",
+      "buyDate": "2026-07-16",
+      "units": 0.1143184421534937,
+      "buyPriceJPY": 8730,
+      "peakJPY": 8730,
+      "costJPY": 1000,
+      "actionsThru": "2026-07-16",
+      "curValueJPY": 998
     }
   ],
   "closed": [],
-  "lastBuyDate": "2026-07-09",
-  "cashJPY": 16000,
+  "lastBuyDate": "2026-07-16",
+  "cashJPY": 1000,
   "benchmark": {
     "symbol": "FUND:0331418A",
     "name": "オルカン（eMAXIS Slim 全世界株式）",
-    "investedJPY": 20000,
-    "units": 0.5224066360827838,
-    "lastBuyDate": "2026-07-15",
+    "investedJPY": 24000,
+    "units": 0.6267499255049829,
+    "lastBuyDate": "2026-07-16",
     "startDate": "2026-07-09",
-    "lastPriceJPY": 38197,
-    "navDate": "2026-07-14",
-    "valuationJPY": 19954.4
+    "lastPriceJPY": 38335,
+    "navDate": "2026-07-15",
+    "valuationJPY": 24026.5
   },
-  "valuationJPY": 19974,
-  "updated": "2026-07-15",
+  "valuationJPY": 23777.4,
+  "updated": "2026-07-16",
   "history": [
     {
       "date": "2026-07-09",
@@ -107,14 +227,21 @@
       "val": 19974,
       "bInv": 20000,
       "bVal": 19954.4
+    },
+    {
+      "date": "2026-07-16",
+      "inv": 24000,
+      "val": 23777.4,
+      "bInv": 24000,
+      "bVal": 24026.5
     }
   ],
-  "feesPaidJPY": 0,
+  "feesPaidJPY": 38,
   "dividendsJPY": 0,
   "lastTrimMonth": "2026-07",
-  "lastContribDate": "2026-07-15",
+  "lastContribDate": "2026-07-16",
   "B": {
-    "investedJPY": 20000,
+    "investedJPY": 24000,
     "realizedJPY": 0,
     "taxPaidJPY": 0,
     "open": [
@@ -127,8 +254,8 @@
         "buyPriceJPY": 1484,
         "peakJPY": 1484,
         "costJPY": 1000,
-        "curValueJPY": 978.4,
-        "actionsThru": "2026-07-15",
+        "curValueJPY": 967.7,
+        "actionsThru": "2026-07-16",
         "trailPct": 35
       },
       {
@@ -140,8 +267,8 @@
         "buyPriceJPY": 153935.21,
         "peakJPY": 160388.84524000002,
         "costJPY": 1000,
-        "curValueJPY": 1035.2,
-        "actionsThru": "2026-07-15",
+        "curValueJPY": 952.1,
+        "actionsThru": "2026-07-16",
         "trailPct": 35
       },
       {
@@ -151,10 +278,10 @@
         "buyDate": "2026-07-09",
         "units": 0.06933999443274733,
         "buyPriceJPY": 14421.69,
-        "peakJPY": 15308.735820000002,
+        "peakJPY": 15480.16529,
         "costJPY": 1000,
-        "curValueJPY": 1031.1,
-        "actionsThru": "2026-07-15",
+        "curValueJPY": 1073.4,
+        "actionsThru": "2026-07-16",
         "trailPct": 35
       },
       {
@@ -166,27 +293,171 @@
         "buyPriceJPY": 78130,
         "peakJPY": 83250,
         "costJPY": 1000,
-        "curValueJPY": 926.4,
-        "actionsThru": "2026-07-15",
+        "curValueJPY": 816.5,
+        "actionsThru": "2026-07-16",
         "trailPct": 35
+      },
+      {
+        "symbol": "NASDAQ:MVLL",
+        "name": "GraniteShares 2x Long MRVL Dail",
+        "sector": "ETF",
+        "buyDate": "2026-07-16",
+        "units": 0.7072156699868828,
+        "buyPriceJPY": 4233.5,
+        "peakJPY": 4233.50348,
+        "costJPY": 3000,
+        "actionsThru": "2026-07-16",
+        "curValueJPY": 2994
+      },
+      {
+        "symbol": "NASDAQ:DLLL",
+        "name": "GraniteShares 2x Long DELL Dail",
+        "sector": "ETF",
+        "buyDate": "2026-07-16",
+        "units": 0.8385144484819508,
+        "buyPriceJPY": 3570.6,
+        "peakJPY": 3570.6003700000006,
+        "costJPY": 3000,
+        "actionsThru": "2026-07-16",
+        "curValueJPY": 2994
+      },
+      {
+        "symbol": "TSE:285A",
+        "name": "KIOXIA HOLDINGS CORPORATION",
+        "sector": "Technology",
+        "buyDate": "2026-07-16",
+        "units": 0.03129017087317761,
+        "buyPriceJPY": 63790,
+        "peakJPY": 63790,
+        "costJPY": 2000,
+        "actionsThru": "2026-07-16",
+        "curValueJPY": 1996
+      },
+      {
+        "symbol": "TSE:6976",
+        "name": "TAIYO YUDEN CO LTD",
+        "sector": "Technology",
+        "buyDate": "2026-07-16",
+        "units": 0.2336324619586422,
+        "buyPriceJPY": 12815,
+        "peakJPY": 12815,
+        "costJPY": 3000,
+        "actionsThru": "2026-07-16",
+        "curValueJPY": 2994
+      },
+      {
+        "symbol": "TSE:2726",
+        "name": "PAL GROUP HOLDINGS CO LTD",
+        "sector": "Consumer Cyclical",
+        "buyDate": "2026-07-16",
+        "units": 1.3899721448467968,
+        "buyPriceJPY": 1436,
+        "peakJPY": 1436,
+        "costJPY": 2000,
+        "actionsThru": "2026-07-16",
+        "curValueJPY": 1996
+      },
+      {
+        "symbol": "NASDAQ:MULL",
+        "name": "GraniteShares 2x Long MU Daily ",
+        "sector": "ETF",
+        "buyDate": "2026-07-16",
+        "units": 0.2838861733526568,
+        "buyPriceJPY": 3515.49,
+        "peakJPY": 3515.4935100000002,
+        "costJPY": 1000,
+        "actionsThru": "2026-07-16",
+        "curValueJPY": 998
+      },
+      {
+        "symbol": "TSE:6305",
+        "name": "HITACHI CONSTRUCTION MACHINERY",
+        "sector": "Industrials",
+        "buyDate": "2026-07-16",
+        "units": 0.18808895589898228,
+        "buyPriceJPY": 5306,
+        "peakJPY": 5306,
+        "costJPY": 1000,
+        "actionsThru": "2026-07-16",
+        "curValueJPY": 998
+      },
+      {
+        "symbol": "NASDAQ:TRI",
+        "name": "Thomson Reuters Corp",
+        "sector": "Industrials",
+        "buyDate": "2026-07-16",
+        "units": 0.06446959585403755,
+        "buyPriceJPY": 15480.17,
+        "peakJPY": 15480.16529,
+        "costJPY": 1000,
+        "actionsThru": "2026-07-16",
+        "curValueJPY": 998
+      },
+      {
+        "symbol": "TSE:4612",
+        "name": "NIPPON PAINT HOLDINGS CO LTD",
+        "sector": "Basic Materials",
+        "buyDate": "2026-07-16",
+        "units": 0.9143380668804397,
+        "buyPriceJPY": 1091.5,
+        "peakJPY": 1091.5,
+        "costJPY": 1000,
+        "actionsThru": "2026-07-16",
+        "curValueJPY": 998
+      },
+      {
+        "symbol": "TSE:6869",
+        "name": "SYSMEX CORP",
+        "sector": "Healthcare",
+        "buyDate": "2026-07-16",
+        "units": 0.6405648267008985,
+        "buyPriceJPY": 1558,
+        "peakJPY": 1558,
+        "costJPY": 1000,
+        "actionsThru": "2026-07-16",
+        "curValueJPY": 998
+      },
+      {
+        "symbol": "TSE:7309",
+        "name": "SHIMANO INC",
+        "sector": "Consumer Cyclical",
+        "buyDate": "2026-07-16",
+        "units": 0.05600448933782267,
+        "buyPriceJPY": 17820,
+        "peakJPY": 17820,
+        "costJPY": 1000,
+        "actionsThru": "2026-07-16",
+        "curValueJPY": 998
+      },
+      {
+        "symbol": "AMEX:SOXL",
+        "name": "Direxion Daily Semiconductor Bu",
+        "sector": "ETF",
+        "buyDate": "2026-07-16",
+        "units": 0.03719414738761175,
+        "buyPriceJPY": 26832.18,
+        "peakJPY": 26832.178450000003,
+        "costJPY": 1000,
+        "actionsThru": "2026-07-16",
+        "curValueJPY": 998
       }
     ],
     "closed": [],
-    "lastBuyDate": "2026-07-09",
-    "cashJPY": 16000,
+    "lastBuyDate": "2026-07-16",
+    "cashJPY": 0,
     "benchmark": {
       "symbol": "FUND:0331418A",
       "name": "オルカン（eMAXIS Slim 全世界株式）",
-      "investedJPY": 20000,
-      "units": 0.5224066360827838,
-      "lastBuyDate": "2026-07-15",
+      "investedJPY": 24000,
+      "units": 0.6267499255049829,
+      "lastBuyDate": "2026-07-16",
       "startDate": "2026-07-09",
-      "lastPriceJPY": 38197,
-      "navDate": "2026-07-14",
-      "valuationJPY": 19954.4
+      "lastPriceJPY": 38335,
+      "navDate": "2026-07-15",
+      "valuationJPY": 24026.5
     },
-    "valuationJPY": 19971.1,
-    "updated": "2026-07-15",
+    "valuationJPY": 23769.7,
+    "updated": "2026-07-16",
     "history": [
       {
         "date": "2026-07-09",
@@ -222,11 +493,18 @@
         "val": 19971.1,
         "bInv": 20000,
         "bVal": 19954.4
+      },
+      {
+        "date": "2026-07-16",
+        "inv": 24000,
+        "val": 23769.7,
+        "bInv": 24000,
+        "bVal": 24026.5
       }
     ],
-    "feesPaidJPY": 0,
+    "feesPaidJPY": 40,
     "dividendsJPY": 0,
     "lastTrimMonth": "2026-07",
-    "lastContribDate": "2026-07-15"
+    "lastContribDate": "2026-07-16"
   }
 }
