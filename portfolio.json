@@ -1,6 +1,6 @@
 {
-  "investedJPY": 60000,
-  "realizedJPY": 681.2,
+  "investedJPY": 64000,
+  "realizedJPY": 3157.5,
   "taxPaidJPY": 0,
   "open": [
     {
@@ -10,10 +10,10 @@
       "buyDate": "2026-07-09",
       "units": 0.6738544474393531,
       "buyPriceJPY": 1484,
-      "peakJPY": 1496,
+      "peakJPY": 1500,
       "costJPY": 1000,
-      "curValueJPY": 1008.1,
-      "actionsThru": "2026-07-29",
+      "curValueJPY": 1010.8,
+      "actionsThru": "2026-07-30",
       "trailPct": 35
     },
     {
@@ -25,8 +25,8 @@
       "buyPriceJPY": 153935.21,
       "peakJPY": 162236.0064,
       "costJPY": 1000,
-      "curValueJPY": 872.7,
-      "actionsThru": "2026-07-29",
+      "curValueJPY": 784.7,
+      "actionsThru": "2026-07-30",
       "trailPct": 35
     },
     {
@@ -36,10 +36,10 @@
       "buyDate": "2026-07-09",
       "units": 0.06933999443274733,
       "buyPriceJPY": 14421.69,
-      "peakJPY": 16911.15525,
+      "peakJPY": 17381.59202,
       "costJPY": 1000,
-      "curValueJPY": 1172.6,
-      "actionsThru": "2026-07-29",
+      "curValueJPY": 1205.2,
+      "actionsThru": "2026-07-30",
       "trailPct": 35
     },
     {
@@ -51,22 +51,9 @@
       "buyPriceJPY": 3570.6,
       "peakJPY": 4084.6530000000002,
       "costJPY": 3000,
-      "actionsThru": "2026-07-29",
-      "curValueJPY": 2682.6,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 2360.1,
       "trailPct": 55
-    },
-    {
-      "symbol": "TSE:285A",
-      "name": "KIOXIA HOLDINGS CORPORATION",
-      "sector": "Technology",
-      "buyDate": "2026-07-16",
-      "units": 0.03107098381070984,
-      "buyPriceJPY": 64240,
-      "peakJPY": 66520,
-      "costJPY": 2000,
-      "actionsThru": "2026-07-29",
-      "curValueJPY": 1415.3,
-      "trailPct": 35
     },
     {
       "symbol": "TSE:6976",
@@ -77,8 +64,8 @@
       "buyPriceJPY": 12890,
       "peakJPY": 12890,
       "costJPY": 1000,
-      "actionsThru": "2026-07-29",
-      "curValueJPY": 763.4,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 707.1,
       "trailPct": 35
     },
     {
@@ -90,8 +77,8 @@
       "buyPriceJPY": 3515.49,
       "peakJPY": 4169.728,
       "costJPY": 3000,
-      "actionsThru": "2026-07-29",
-      "curValueJPY": 2383,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 1902.9,
       "trailPct": 55
     },
     {
@@ -103,22 +90,9 @@
       "buyPriceJPY": 10810.67,
       "peakJPY": 11679.987799999999,
       "costJPY": 3000,
-      "actionsThru": "2026-07-29",
-      "curValueJPY": 2176,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 1920.7,
       "trailPct": 55
-    },
-    {
-      "symbol": "NASDAQ:SNDK",
-      "name": "Sandisk Corporation",
-      "sector": "Technology",
-      "buyDate": "2026-07-16",
-      "units": 0.0038126879876279416,
-      "buyPriceJPY": 261757.59,
-      "peakJPY": 263836.4672,
-      "costJPY": 1000,
-      "actionsThru": "2026-07-29",
-      "curValueJPY": 684.2,
-      "trailPct": 35
     },
     {
       "symbol": "TSE:2726",
@@ -127,10 +101,10 @@
       "buyDate": "2026-07-16",
       "units": 1.3899721448467968,
       "buyPriceJPY": 1436,
-      "peakJPY": 1496,
+      "peakJPY": 1500,
       "costJPY": 2000,
-      "actionsThru": "2026-07-29",
-      "curValueJPY": 2079.4,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 2085,
       "trailPct": 35
     },
     {
@@ -142,8 +116,8 @@
       "buyPriceJPY": 66886.76,
       "peakJPY": 72039.908,
       "costJPY": 1000,
-      "actionsThru": "2026-07-29",
-      "curValueJPY": 957.9,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 901.5,
       "trailPct": 35
     },
     {
@@ -153,10 +127,10 @@
       "buyDate": "2026-07-16",
       "units": 0.1289391917080751,
       "buyPriceJPY": 15480.17,
-      "peakJPY": 16911.15525,
+      "peakJPY": 17381.59202,
       "costJPY": 2000,
-      "actionsThru": "2026-07-29",
-      "curValueJPY": 2180.5,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 2241.2,
       "trailPct": 35
     },
     {
@@ -168,22 +142,141 @@
       "buyPriceJPY": 8730,
       "peakJPY": 8730,
       "costJPY": 1000,
-      "actionsThru": "2026-07-29",
-      "curValueJPY": 768.3,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 745.5,
       "trailPct": 35
     },
     {
-      "symbol": "TSE:285A",
-      "name": "KIOXIA HOLDINGS CORPORATION",
+      "symbol": "NASDAQ:DLLL",
+      "name": "GraniteShares 2x Long DELL Dail",
+      "sector": "ETF",
+      "buyDate": "2026-07-30",
+      "units": 2.1274322994232633,
+      "buyPriceJPY": 2814.66,
+      "peakJPY": 2814.66066,
+      "costJPY": 6000,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 5988
+    },
+    {
+      "symbol": "TSE:6976",
+      "name": "TAIYO YUDEN CO LTD",
       "sector": "Technology",
-      "buyDate": "2026-07-23",
-      "units": 0.015425038639876352,
-      "buyPriceJPY": 64700,
-      "peakJPY": 64700,
+      "buyDate": "2026-07-30",
+      "units": 0.8741924887769627,
+      "buyPriceJPY": 9133,
+      "peakJPY": 9133,
+      "costJPY": 8000,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 7984
+    },
+    {
+      "symbol": "NASDAQ:SNDK",
+      "name": "Sandisk Corporation",
+      "sector": "Technology",
+      "buyDate": "2026-07-30",
+      "units": 0.048081825389321806,
+      "buyPriceJPY": 166050.27,
+      "peakJPY": 166050.26817,
+      "costJPY": 8000,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 7984
+    },
+    {
+      "symbol": "TSE:2726",
+      "name": "PAL GROUP HOLDINGS CO LTD",
+      "sector": "Consumer Cyclical",
+      "buyDate": "2026-07-30",
+      "units": 3.3266666666666667,
+      "buyPriceJPY": 1500,
+      "peakJPY": 1500,
+      "costJPY": 5000,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 4990
+    },
+    {
+      "symbol": "NASDAQ:KMB",
+      "name": "Kimberly-Clark Corporation",
+      "sector": "Consumer Defensive",
+      "buyDate": "2026-07-30",
+      "units": 0.4314622877374625,
+      "buyPriceJPY": 18504.51,
+      "peakJPY": 18504.51413,
+      "costJPY": 8000,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 7984
+    },
+    {
+      "symbol": "TSE:4689",
+      "name": "LY CORPORATION",
+      "sector": "Consumer Cyclical",
+      "buyDate": "2026-07-30",
+      "units": 6.554290718038529,
+      "buyPriceJPY": 456.8,
+      "peakJPY": 456.8,
+      "costJPY": 3000,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 2994
+    },
+    {
+      "symbol": "NASDAQ:MULL",
+      "name": "GraniteShares 2x Long MU Daily ",
+      "sector": "ETF",
+      "buyDate": "2026-07-30",
+      "units": 0.4466518434048841,
+      "buyPriceJPY": 2234.4,
+      "peakJPY": 2234.40251,
       "costJPY": 1000,
-      "actionsThru": "2026-07-29",
-      "curValueJPY": 702.6,
-      "trailPct": 35
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 998
+    },
+    {
+      "symbol": "TSE:4751",
+      "name": "CYBER AGENT",
+      "sector": "Communication Services",
+      "buyDate": "2026-07-30",
+      "units": 0.6478416098669263,
+      "buyPriceJPY": 1540.5,
+      "peakJPY": 1540.5,
+      "costJPY": 1000,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 998
+    },
+    {
+      "symbol": "TSE:4680",
+      "name": "ROUND ONE CORP",
+      "sector": "Consumer Cyclical",
+      "buyDate": "2026-07-30",
+      "units": 0.7980807676929228,
+      "buyPriceJPY": 1250.5,
+      "peakJPY": 1250.5,
+      "costJPY": 1000,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 998
+    },
+    {
+      "symbol": "TSE:3086",
+      "name": "J FRONT RETAILING CO LTD",
+      "sector": "Consumer Cyclical",
+      "buyDate": "2026-07-30",
+      "units": 0.32937293729372935,
+      "buyPriceJPY": 3030,
+      "peakJPY": 3030,
+      "costJPY": 1000,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 998
+    },
+    {
+      "symbol": "TSE:4612",
+      "name": "NIPPON PAINT HOLDINGS CO LTD",
+      "sector": "Basic Materials",
+      "buyDate": "2026-07-30",
+      "units": 0.8213991769547325,
+      "buyPriceJPY": 1215,
+      "peakJPY": 1215,
+      "costJPY": 1000,
+      "actionsThru": "2026-07-30",
+      "curValueJPY": 998
     }
   ],
   "closed": [
@@ -200,23 +293,65 @@
       "taxJPY": 0,
       "netJPY": 681.2,
       "sellReason": "暴落ストップ(ピーク比-35%)"
+    },
+    {
+      "symbol": "TSE:285A",
+      "name": "KIOXIA HOLDINGS CORPORATION",
+      "sector": "Technology",
+      "buyDate": "2026-07-16",
+      "units": 0.03107098381070984,
+      "costJPY": 2000,
+      "sellDate": "2026-07-30",
+      "sellValueJPY": 1235.1,
+      "feeJPY": 2.5,
+      "taxJPY": 0,
+      "netJPY": 1232.6,
+      "sellReason": "暴落ストップ(ピーク比-35%)"
+    },
+    {
+      "symbol": "NASDAQ:SNDK",
+      "name": "Sandisk Corporation",
+      "sector": "Technology",
+      "buyDate": "2026-07-16",
+      "units": 0.0038126879876279416,
+      "costJPY": 1000,
+      "sellDate": "2026-07-30",
+      "sellValueJPY": 633.1,
+      "feeJPY": 1.3,
+      "taxJPY": 0,
+      "netJPY": 631.8,
+      "sellReason": "暴落ストップ(ピーク比-35%)"
+    },
+    {
+      "symbol": "TSE:285A",
+      "name": "KIOXIA HOLDINGS CORPORATION",
+      "sector": "Technology",
+      "buyDate": "2026-07-23",
+      "units": 0.015425038639876352,
+      "costJPY": 1000,
+      "sellDate": "2026-07-30",
+      "sellValueJPY": 613.1,
+      "feeJPY": 1.2,
+      "taxJPY": 0,
+      "netJPY": 611.9,
+      "sellReason": "暴落ストップ(ピーク比-35%)"
     }
   ],
-  "lastBuyDate": "2026-07-23",
-  "cashJPY": 36681.2,
+  "lastBuyDate": "2026-07-30",
+  "cashJPY": 157.5,
   "benchmark": {
     "symbol": "FUND:0331418A",
     "name": "オルカン（eMAXIS Slim 全世界株式）",
-    "investedJPY": 60000,
-    "units": 1.5671911787405115,
-    "lastBuyDate": "2026-07-29",
+    "investedJPY": 64000,
+    "units": 1.6722028612901951,
+    "lastBuyDate": "2026-07-30",
     "startDate": "2026-07-09",
-    "lastPriceJPY": 38183,
-    "navDate": "2026-07-28",
-    "valuationJPY": 59840.1
+    "lastPriceJPY": 38091,
+    "navDate": "2026-07-29",
+    "valuationJPY": 63695.9
   },
-  "valuationJPY": 56527.8,
-  "updated": "2026-07-29",
+  "valuationJPY": 58936.2,
+  "updated": "2026-07-30",
   "history": [
     {
       "date": "2026-07-09",
@@ -322,18 +457,25 @@
       "val": 56527.8,
       "bInv": 60000,
       "bVal": 59840.1
+    },
+    {
+      "date": "2026-07-30",
+      "inv": 64000,
+      "val": 58936.2,
+      "bInv": 64000,
+      "bVal": 63695.9
     }
   ],
-  "feesPaidJPY": 41.4,
+  "feesPaidJPY": 132.4,
   "dividendsJPY": 0,
   "lastTrimMonth": "2026-07",
-  "lastContribDate": "2026-07-29",
+  "lastContribDate": "2026-07-30",
   "taxYear": "2026",
-  "ytdRealizedJPY": -317.4,
+  "ytdRealizedJPY": -1836.1,
   "ytdTaxPaidJPY": 0,
   "B": {
-    "investedJPY": 60000,
-    "realizedJPY": 683.5,
+    "investedJPY": 64000,
+    "realizedJPY": 2540.6,
     "taxPaidJPY": 0,
     "open": [
       {
@@ -345,8 +487,8 @@
         "buyPriceJPY": 1484,
         "peakJPY": 1501,
         "costJPY": 1000,
-        "curValueJPY": 1011.5,
-        "actionsThru": "2026-07-29",
+        "curValueJPY": 1010.8,
+        "actionsThru": "2026-07-30",
         "trailPct": 35
       },
       {
@@ -358,8 +500,8 @@
         "buyPriceJPY": 153935.21,
         "peakJPY": 162236.0064,
         "costJPY": 1000,
-        "curValueJPY": 872.7,
-        "actionsThru": "2026-07-29",
+        "curValueJPY": 784.7,
+        "actionsThru": "2026-07-30",
         "trailPct": 35
       },
       {
@@ -369,10 +511,10 @@
         "buyDate": "2026-07-09",
         "units": 0.06933999443274733,
         "buyPriceJPY": 14421.69,
-        "peakJPY": 16911.15525,
+        "peakJPY": 17381.59202,
         "costJPY": 1000,
-        "curValueJPY": 1172.6,
-        "actionsThru": "2026-07-29",
+        "curValueJPY": 1205.2,
+        "actionsThru": "2026-07-30",
         "trailPct": 35
       },
       {
@@ -384,8 +526,8 @@
         "buyPriceJPY": 4233.5,
         "peakJPY": 4370.008,
         "costJPY": 3000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 2077.3,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 1809.1,
         "trailPct": 55
       },
       {
@@ -397,22 +539,9 @@
         "buyPriceJPY": 3570.6,
         "peakJPY": 4084.6530000000002,
         "costJPY": 3000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 2682.6,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 2360.1,
         "trailPct": 55
-      },
-      {
-        "symbol": "TSE:285A",
-        "name": "KIOXIA HOLDINGS CORPORATION",
-        "sector": "Technology",
-        "buyDate": "2026-07-16",
-        "units": 0.03129017087317761,
-        "buyPriceJPY": 63790,
-        "peakJPY": 66510,
-        "costJPY": 2000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 1418.4,
-        "trailPct": 35
       },
       {
         "symbol": "TSE:6976",
@@ -423,8 +552,8 @@
         "buyPriceJPY": 12815,
         "peakJPY": 12815,
         "costJPY": 3000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 2295,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 2137.3,
         "trailPct": 35
       },
       {
@@ -436,8 +565,8 @@
         "buyPriceJPY": 1436,
         "peakJPY": 1501,
         "costJPY": 2000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 2086.3,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 2085,
         "trailPct": 35
       },
       {
@@ -449,8 +578,8 @@
         "buyPriceJPY": 3515.49,
         "peakJPY": 4169.728,
         "costJPY": 1000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 794.3,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 634.3,
         "trailPct": 55
       },
       {
@@ -460,10 +589,10 @@
         "buyDate": "2026-07-16",
         "units": 0.18808895589898228,
         "buyPriceJPY": 5306,
-        "peakJPY": 5571,
+        "peakJPY": 5602,
         "costJPY": 1000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 1036,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 1053.7,
         "trailPct": 35
       },
       {
@@ -473,10 +602,10 @@
         "buyDate": "2026-07-16",
         "units": 0.06446959585403755,
         "buyPriceJPY": 15480.17,
-        "peakJPY": 16911.15525,
+        "peakJPY": 17381.59202,
         "costJPY": 1000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 1090.3,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 1120.6,
         "trailPct": 35
       },
       {
@@ -488,8 +617,8 @@
         "buyPriceJPY": 1091.5,
         "peakJPY": 1240.5,
         "costJPY": 1000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 1134.2,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 1111.4,
         "trailPct": 35
       },
       {
@@ -501,8 +630,8 @@
         "buyPriceJPY": 1558,
         "peakJPY": 1659,
         "costJPY": 1000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 1062.7,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 1053.4,
         "trailPct": 35
       },
       {
@@ -512,10 +641,10 @@
         "buyDate": "2026-07-16",
         "units": 0.05600448933782267,
         "buyPriceJPY": 17820,
-        "peakJPY": 20495,
+        "peakJPY": 20835,
         "costJPY": 1000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 1147.8,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 1166.9,
         "trailPct": 35
       },
       {
@@ -527,8 +656,8 @@
         "buyPriceJPY": 26832.18,
         "peakJPY": 26832.178450000003,
         "costJPY": 1000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 667.1,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 559.3,
         "trailPct": 55
       },
       {
@@ -540,8 +669,8 @@
         "buyPriceJPY": 1376,
         "peakJPY": 1501,
         "costJPY": 3000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 3266,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 3263.8,
         "trailPct": 35
       },
       {
@@ -551,10 +680,10 @@
         "buyDate": "2026-07-23",
         "units": 0.28033649199245353,
         "buyPriceJPY": 14240.03,
-        "peakJPY": 16911.15525,
+        "peakJPY": 17381.59202,
         "costJPY": 4000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 4740.8,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 4872.7,
         "trailPct": 35
       },
       {
@@ -566,8 +695,8 @@
         "buyPriceJPY": 1523,
         "peakJPY": 1659,
         "costJPY": 4000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 4348.5,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 4310.5,
         "trailPct": 35
       },
       {
@@ -577,10 +706,10 @@
         "buyDate": "2026-07-23",
         "units": 0.1863330843913368,
         "buyPriceJPY": 5356,
-        "peakJPY": 5571,
+        "peakJPY": 5602,
         "costJPY": 1000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 1026.3,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 1043.8,
         "trailPct": 35
       },
       {
@@ -592,8 +721,8 @@
         "buyPriceJPY": 441.2,
         "peakJPY": 463,
         "costJPY": 1000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 1047.3,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 1034,
         "trailPct": 35
       },
       {
@@ -605,8 +734,8 @@
         "buyPriceJPY": 1121,
         "peakJPY": 1240.5,
         "costJPY": 1000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 1104.4,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 1082.1,
         "trailPct": 35
       },
       {
@@ -618,8 +747,8 @@
         "buyPriceJPY": 4370.01,
         "peakJPY": 4370.008,
         "costJPY": 1000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 670.8,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 584.2,
         "trailPct": 55
       },
       {
@@ -629,10 +758,10 @@
         "buyDate": "2026-07-23",
         "units": 0.8313202832153269,
         "buyPriceJPY": 1200.5,
-        "peakJPY": 1239.5,
+        "peakJPY": 1251.5,
         "costJPY": 1000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 1030.4,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 1040.4,
         "trailPct": 35
       },
       {
@@ -642,23 +771,10 @@
         "buyDate": "2026-07-23",
         "units": 0.0539751216873986,
         "buyPriceJPY": 18490,
-        "peakJPY": 20495,
+        "peakJPY": 20835,
         "costJPY": 1000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 1106.2,
-        "trailPct": 35
-      },
-      {
-        "symbol": "TSE:285A",
-        "name": "KIOXIA HOLDINGS CORPORATION",
-        "sector": "Technology",
-        "buyDate": "2026-07-23",
-        "units": 0.015499301133716415,
-        "buyPriceJPY": 64390,
-        "peakJPY": 64390,
-        "costJPY": 1000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 702.6,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 1124.6,
         "trailPct": 35
       },
       {
@@ -670,8 +786,8 @@
         "buyPriceJPY": 4084.65,
         "peakJPY": 4084.6530000000002,
         "costJPY": 1000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 781.7,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 687.7,
         "trailPct": 55
       },
       {
@@ -683,9 +799,153 @@
         "buyPriceJPY": 12670,
         "peakJPY": 12670,
         "costJPY": 1000,
-        "actionsThru": "2026-07-29",
-        "curValueJPY": 773.7,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 720.6,
         "trailPct": 35
+      },
+      {
+        "symbol": "TSE:563A",
+        "name": "GLOBAL X JAPAN CO LTD GBL NSDQ1",
+        "sector": "ETF",
+        "buyDate": "2026-07-30",
+        "units": 7.827450980392157,
+        "buyPriceJPY": 1020,
+        "peakJPY": 1020,
+        "costJPY": 8000,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 7984
+      },
+      {
+        "symbol": "TSE:2726",
+        "name": "PAL GROUP HOLDINGS CO LTD",
+        "sector": "Consumer Cyclical",
+        "buyDate": "2026-07-30",
+        "units": 1.3306666666666667,
+        "buyPriceJPY": 1500,
+        "peakJPY": 1500,
+        "costJPY": 2000,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 1996
+      },
+      {
+        "symbol": "NASDAQ:FISV",
+        "name": "Fiserv, Inc.",
+        "sector": null,
+        "buyDate": "2026-07-30",
+        "units": 0.3292682383252615,
+        "buyPriceJPY": 9092.89,
+        "peakJPY": 9092.89039,
+        "costJPY": 3000,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 2994
+      },
+      {
+        "symbol": "TSE:6976",
+        "name": "TAIYO YUDEN CO LTD",
+        "sector": "Technology",
+        "buyDate": "2026-07-30",
+        "units": 0.10909488412767818,
+        "buyPriceJPY": 9148,
+        "peakJPY": 9148,
+        "costJPY": 1000,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 998
+      },
+      {
+        "symbol": "NASDAQ:MVLL",
+        "name": "GraniteShares 2x Long MRVL Dail",
+        "sector": "ETF",
+        "buyDate": "2026-07-30",
+        "units": 0.390142536699346,
+        "buyPriceJPY": 2558.04,
+        "peakJPY": 2558.03945,
+        "costJPY": 1000,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 998
+      },
+      {
+        "symbol": "TSE:7974",
+        "name": "NINTENDO CO LTD",
+        "sector": "Communication Services",
+        "buyDate": "2026-07-30",
+        "units": 0.1248592518453647,
+        "buyPriceJPY": 7993,
+        "peakJPY": 7993,
+        "costJPY": 1000,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 998
+      },
+      {
+        "symbol": "TSE:6417",
+        "name": "SANKYO CO LTD",
+        "sector": "Consumer Cyclical",
+        "buyDate": "2026-07-30",
+        "units": 0.5298646137509955,
+        "buyPriceJPY": 1883.5,
+        "peakJPY": 1883.5,
+        "costJPY": 1000,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 998
+      },
+      {
+        "symbol": "NASDAQ:KMB",
+        "name": "Kimberly-Clark Corporation",
+        "sector": "Consumer Defensive",
+        "buyDate": "2026-07-30",
+        "units": 0.05393278596718281,
+        "buyPriceJPY": 18504.51,
+        "peakJPY": 18504.51413,
+        "costJPY": 1000,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 998
+      },
+      {
+        "symbol": "TSE:3349",
+        "name": "COSMOS PHARMACEUTICAL CORP",
+        "sector": "Healthcare",
+        "buyDate": "2026-07-30",
+        "units": 0.1470458228967143,
+        "buyPriceJPY": 6787,
+        "peakJPY": 6787,
+        "costJPY": 1000,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 998
+      },
+      {
+        "symbol": "NYSE:FIS",
+        "name": "Fidelity National Information S",
+        "sector": "Technology",
+        "buyDate": "2026-07-30",
+        "units": 0.13043646014408813,
+        "buyPriceJPY": 7651.23,
+        "peakJPY": 7651.2349300000005,
+        "costJPY": 1000,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 998
+      },
+      {
+        "symbol": "TSE:3659",
+        "name": "NEXON CO LTD",
+        "sector": "Communication Services",
+        "buyDate": "2026-07-30",
+        "units": 0.3906831082403601,
+        "buyPriceJPY": 2554.5,
+        "peakJPY": 2554.5,
+        "costJPY": 1000,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 998
+      },
+      {
+        "symbol": "NASDAQ:DLLL",
+        "name": "GraniteShares 2x Long DELL Dail",
+        "sector": "ETF",
+        "buyDate": "2026-07-30",
+        "units": 0.3545720499038772,
+        "buyPriceJPY": 2814.66,
+        "peakJPY": 2814.66066,
+        "costJPY": 1000,
+        "actionsThru": "2026-07-30",
+        "curValueJPY": 998
       }
     ],
     "closed": [
@@ -702,23 +962,51 @@
         "taxJPY": 0,
         "netJPY": 683.5,
         "sellReason": "暴落ストップ(ピーク比-35%)"
+      },
+      {
+        "symbol": "TSE:285A",
+        "name": "KIOXIA HOLDINGS CORPORATION",
+        "sector": "Technology",
+        "buyDate": "2026-07-16",
+        "units": 0.03129017087317761,
+        "costJPY": 2000,
+        "sellDate": "2026-07-30",
+        "sellValueJPY": 1244.4,
+        "feeJPY": 2.5,
+        "taxJPY": 0,
+        "netJPY": 1241.9,
+        "sellReason": "暴落ストップ(ピーク比-35%)"
+      },
+      {
+        "symbol": "TSE:285A",
+        "name": "KIOXIA HOLDINGS CORPORATION",
+        "sector": "Technology",
+        "buyDate": "2026-07-23",
+        "units": 0.015499301133716415,
+        "costJPY": 1000,
+        "sellDate": "2026-07-30",
+        "sellValueJPY": 616.4,
+        "feeJPY": 1.2,
+        "taxJPY": 0,
+        "netJPY": 615.2,
+        "sellReason": "暴落ストップ(ピーク比-35%)"
       }
     ],
-    "lastBuyDate": "2026-07-23",
-    "cashJPY": 16683.5,
+    "lastBuyDate": "2026-07-30",
+    "cashJPY": 540.6,
     "benchmark": {
       "symbol": "FUND:0331418A",
       "name": "オルカン（eMAXIS Slim 全世界株式）",
-      "investedJPY": 60000,
-      "units": 1.5671911787405115,
-      "lastBuyDate": "2026-07-29",
+      "investedJPY": 64000,
+      "units": 1.6722028612901951,
+      "lastBuyDate": "2026-07-30",
       "startDate": "2026-07-09",
-      "lastPriceJPY": 38183,
-      "navDate": "2026-07-28",
-      "valuationJPY": 59840.1
+      "lastPriceJPY": 38091,
+      "navDate": "2026-07-29",
+      "valuationJPY": 63695.9
     },
-    "valuationJPY": 57831,
-    "updated": "2026-07-29",
+    "valuationJPY": 60352.8,
+    "updated": "2026-07-30",
     "history": [
       {
         "date": "2026-07-09",
@@ -824,14 +1112,21 @@
         "val": 57831,
         "bInv": 60000,
         "bVal": 59840.1
+      },
+      {
+        "date": "2026-07-30",
+        "inv": 64000,
+        "val": 60352.8,
+        "bInv": 64000,
+        "bVal": 63695.9
       }
     ],
-    "feesPaidJPY": 81.4,
+    "feesPaidJPY": 129.1,
     "dividendsJPY": 0,
     "lastTrimMonth": "2026-07",
-    "lastContribDate": "2026-07-29",
+    "lastContribDate": "2026-07-30",
     "taxYear": "2026",
-    "ytdRealizedJPY": -315.1,
+    "ytdRealizedJPY": -1454.3,
     "ytdTaxPaidJPY": 0
   }
 }
