@@ -7,6 +7,15 @@
 //    売却は暴落ストップ（ピーク比-35%固定・毎日判定）と分散トリム（月1回）のみ（保有期限なし）
 // 3) 対照実験: オルカン（eMAXIS Slim 全世界株式・投信協会CSVの基準価額）を毎日4000円仮想積立して比較
 // 4) ユニバースは日米の株式（時価総額上位）＋ETF（出来高上位）＋主要投資信託
+// ===== 課金APIの遮断（2026-08-03・ユーザー指示「pushするページは絶対にAPIを消費しないように」）=====
+// このスクリプトはLLMを使わない（無料の株価データのみ）。GitHub Actions のワークフローが
+// ANTHROPIC_API_KEY を env で渡してくるが（workflowはtoken scope不足で編集できない）、
+// ここで即座に削除して、将来コードが誤って参照しても課金が発生しないようにする。
+// AIコメント（analysis_v21ns.json の ai 欄）は Claude セッションが手で書き込む運用＝API不使用。
+for (const k of ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "OPENAI_API_KEY"]) delete process.env[k];
+if (process.env.ANTHROPIC_API_KEY) { console.error("APIキーの遮断に失敗"); process.exit(1); }
+console.log("課金APIは使用しません（キーは起動時に破棄済み）");
+
 import fs from "node:fs";
 
 const FILE = "index.html";
@@ -978,22 +987,25 @@ async function simulate(pfFile, weights, primary) {
     else out.picks = picks.slice(0, 4);
   }
 
-  // ===== 対照実験: オルカン(eMAXIS Slim 全世界株式・基準価額)を毎日4000円仮想積立 =====
-  const BENCH = FUNDS[0]; // eMAXIS Slim 全世界株式（オール・カントリー）
+  // ===== 対照実験: QQQ(ナスダック100 ETF・円換算)を毎日4000円仮想積立 =====
+  // 2026-08-02にオルカン(eMAXIS Slim 全世界株式)から変更。理由: 研究側でチャンピオンが
+  // V2.1-NS(完全ノーセル)に更新され、唯一の未決着の比較対象が QQQ買い持ち になったため
+  // (R27: 税後14.06% vs 14.31%で±1pt内)。研究側の前向き検証 R31-FWDNS0 と対照を揃える。
+  const BENCH = { symbol: "NASDAQ:QQQ", name: "ナスダック100(QQQ)" };
   if (!pf.benchmark) {
     pf.benchmark = { symbol: BENCH.symbol, name: BENCH.name,
       investedJPY: 0, units: 0, lastBuyDate: null, startDate: todayISO };
   }
   try {
-    const rows = await fundHistory(BENCH.symbol);
-    const bp = rows ? rows[rows.length - 1].nav : null; // 基準価額（1万口あたり円）
+    // 価格はポートフォリオと同じ経路(yQuote→円換算)を使う。投信の基準価額経路(fundHistory)は使わない
+    const bp = priceJPY[BENCH.symbol] != null ? priceJPY[BENCH.symbol] : await toJPY(await yQuote(BENCH.symbol));
     if (bp) {
-      // 旧ベンチマーク(2559 ETF代理)からの移行: 評価額を引き継いで口数換算
-      if (pf.benchmark.symbol === "TSE:2559") {
-        const carry = pf.benchmark.valuationJPY || pf.benchmark.investedJPY || 0;
-        console.log(`ベンチマーク移行: 2559 → eMAXIS Slim（評価額${carry}円を引き継ぎ）`);
-        pf.benchmark = { symbol: BENCH.symbol, name: BENCH.name, investedJPY: pf.benchmark.investedJPY,
-          units: carry / bp, lastBuyDate: pf.benchmark.lastBuyDate, startDate: pf.benchmark.startDate };
+      // 旧ベンチマーク(2559 ETF / オルカン投信)からの移行: 建て直し(評価額は引き継がない)。
+      // V2.1-NS移行に伴い積立シミュレーション自体をリセットしたため、ベンチも同じ起点から始める
+      if (pf.benchmark.symbol !== BENCH.symbol) {
+        console.log(`ベンチマーク変更: ${pf.benchmark.symbol} → ${BENCH.symbol}（同一起点で建て直し）`);
+        pf.benchmark = { symbol: BENCH.symbol, name: BENCH.name,
+          investedJPY: 0, units: 0, lastBuyDate: null, startDate: todayISO };
       }
       if (pf.benchmark.lastBuyDate !== todayISO) {
         pf.benchmark.units += 4000 / bp;
@@ -1001,11 +1013,11 @@ async function simulate(pfFile, weights, primary) {
         pf.benchmark.lastBuyDate = todayISO;
       }
       pf.benchmark.lastPriceJPY = bp;
-      pf.benchmark.navDate = rows[rows.length - 1].date;
+      pf.benchmark.navDate = todayISO;
       pf.benchmark.valuationJPY = Math.round(pf.benchmark.units * bp * 10) / 10;
-      console.log(`ベンチマーク更新: オルカン積立 投資${pf.benchmark.investedJPY}円 / 評価${pf.benchmark.valuationJPY}円 (基準価額${bp}円 ${pf.benchmark.navDate})`);
+      console.log(`ベンチマーク更新: QQQ積立 投資${pf.benchmark.investedJPY}円 / 評価${pf.benchmark.valuationJPY}円 (円換算${bp}円)`);
     } else {
-      console.log("ベンチマーク: 基準価額が取得できず本日はスキップ");
+      console.log("ベンチマーク: QQQ価格が取得できず本日はスキップ");
     }
   } catch (e) { console.log("ベンチマーク更新失敗:", e.message); }
 
