@@ -1,5 +1,5 @@
 {
-  "investedJPY": 4000,
+  "investedJPY": 8000,
   "realizedJPY": 0,
   "taxPaidJPY": 0,
   "open": [
@@ -10,10 +10,11 @@
       "buyDate": "2026-08-04",
       "units": 0.014763539578981235,
       "buyPriceJPY": 67598.97,
-      "peakJPY": 67598.96532,
+      "peakJPY": 73627.73389999999,
       "costJPY": 1000,
-      "actionsThru": "2026-08-04",
-      "curValueJPY": 998
+      "actionsThru": "2026-08-05",
+      "curValueJPY": 1087,
+      "trailPct": 35
     },
     {
       "symbol": "NASDAQ:AMDL",
@@ -22,10 +23,11 @@
       "buyDate": "2026-08-04",
       "units": 0.1190126597176725,
       "buyPriceJPY": 8385.66,
-      "peakJPY": 8385.66252,
+      "peakJPY": 9867.033399999998,
       "costJPY": 1000,
-      "actionsThru": "2026-08-04",
-      "curValueJPY": 998
+      "actionsThru": "2026-08-05",
+      "curValueJPY": 1174.3,
+      "trailPct": 55
     },
     {
       "symbol": "TSE:6376",
@@ -34,10 +36,11 @@
       "buyDate": "2026-08-04",
       "units": 0.2555697823303457,
       "buyPriceJPY": 3905,
-      "peakJPY": 3905,
+      "peakJPY": 4035,
       "costJPY": 1000,
-      "actionsThru": "2026-08-04",
-      "curValueJPY": 998
+      "actionsThru": "2026-08-05",
+      "curValueJPY": 1031.2,
+      "trailPct": 35
     },
     {
       "symbol": "NYSE:HUM",
@@ -48,27 +51,28 @@
       "buyPriceJPY": 59008.47,
       "peakJPY": 59008.467000000004,
       "costJPY": 1000,
-      "actionsThru": "2026-08-04",
-      "curValueJPY": 998
+      "actionsThru": "2026-08-05",
+      "curValueJPY": 965.1,
+      "trailPct": 35
     }
   ],
   "closed": [],
   "lastBuyDate": "2026-08-04",
-  "cashJPY": 0,
+  "cashJPY": 4000,
   "benchmark": {
     "symbol": "NASDAQ:QQQ",
     "name": "ナスダック100(QQQ)",
-    "investedJPY": 4000,
-    "units": 0.036262355729354226,
-    "lastBuyDate": "2026-08-04",
+    "investedJPY": 8000,
+    "units": 0.07133252625266635,
+    "lastBuyDate": "2026-08-05",
     "startDate": "2026-08-02",
-    "lastPriceJPY": 110307.22962000001,
-    "navDate": "2026-08-04",
-    "valuationJPY": 4000,
+    "lastPriceJPY": 114057.0445,
+    "navDate": "2026-08-05",
+    "valuationJPY": 8136,
     "updated": "2026-08-02"
   },
-  "valuationJPY": 3992,
-  "updated": "2026-08-04",
+  "valuationJPY": 8257.6,
+  "updated": "2026-08-05",
   "history": [
     {
       "date": "2026-08-04",
@@ -76,18 +80,25 @@
       "val": 3992,
       "bInv": 4000,
       "bVal": 4000
+    },
+    {
+      "date": "2026-08-05",
+      "inv": 8000,
+      "val": 8257.6,
+      "bInv": 8000,
+      "bVal": 8136
     }
   ],
   "feesPaidJPY": 8,
   "dividendsJPY": 0,
   "lastTrimMonth": "2026-08",
-  "lastContribDate": "2026-08-04",
+  "lastContribDate": "2026-08-05",
   "taxYear": 2026,
   "ytdRealizedJPY": 0,
   "ytdTaxPaidJPY": 0,
   "note": "積立シミュレーションはV2.1-NS(完全ノーセル)移行に伴い2026-08-02にリセット。以前の記録はGit履歴に残る。",
   "B": {
-    "investedJPY": 4000,
+    "investedJPY": 8000,
     "realizedJPY": 0,
     "taxPaidJPY": 0,
     "open": [
@@ -100,8 +111,9 @@
         "buyPriceJPY": 1492,
         "peakJPY": 1492,
         "costJPY": 1000,
-        "actionsThru": "2026-08-04",
-        "curValueJPY": 998
+        "actionsThru": "2026-08-05",
+        "curValueJPY": 985.3,
+        "trailPct": 35
       },
       {
         "symbol": "NYSE:RACE",
@@ -110,10 +122,11 @@
         "buyDate": "2026-08-04",
         "units": 0.01578412517487672,
         "buyPriceJPY": 63228.08,
-        "peakJPY": 63228.08448,
+        "peakJPY": 63467.6203,
         "costJPY": 1000,
-        "actionsThru": "2026-08-04",
-        "curValueJPY": 998
+        "actionsThru": "2026-08-05",
+        "curValueJPY": 1001.8,
+        "trailPct": 35
       },
       {
         "symbol": "TSE:6305",
@@ -122,10 +135,11 @@
         "buyDate": "2026-08-04",
         "units": 0.188124410933082,
         "buyPriceJPY": 5305,
-        "peakJPY": 5305,
+        "peakJPY": 5417,
         "costJPY": 1000,
-        "actionsThru": "2026-08-04",
-        "curValueJPY": 998
+        "actionsThru": "2026-08-05",
+        "curValueJPY": 1019.1,
+        "trailPct": 35
       },
       {
         "symbol": "TSE:4680",
@@ -134,28 +148,29 @@
         "buyDate": "2026-08-04",
         "units": 0.8190398030365204,
         "buyPriceJPY": 1218.5,
-        "peakJPY": 1218.5,
+        "peakJPY": 1222.5,
         "costJPY": 1000,
-        "actionsThru": "2026-08-04",
-        "curValueJPY": 998
+        "actionsThru": "2026-08-05",
+        "curValueJPY": 1001.3,
+        "trailPct": 35
       }
     ],
     "closed": [],
     "lastBuyDate": "2026-08-04",
-    "cashJPY": 0,
+    "cashJPY": 4000,
     "benchmark": {
       "symbol": "NASDAQ:QQQ",
       "name": "ナスダック100(QQQ)",
-      "investedJPY": 4000,
-      "units": 0.036262355729354226,
-      "lastBuyDate": "2026-08-04",
+      "investedJPY": 8000,
+      "units": 0.07133252625266635,
+      "lastBuyDate": "2026-08-05",
       "startDate": "2026-08-04",
-      "lastPriceJPY": 110307.22962000001,
-      "navDate": "2026-08-04",
-      "valuationJPY": 4000
+      "lastPriceJPY": 114057.0445,
+      "navDate": "2026-08-05",
+      "valuationJPY": 8136
     },
-    "valuationJPY": 3992,
-    "updated": "2026-08-04",
+    "valuationJPY": 8007.5,
+    "updated": "2026-08-05",
     "history": [
       {
         "date": "2026-08-04",
@@ -163,12 +178,19 @@
         "val": 3992,
         "bInv": 4000,
         "bVal": 4000
+      },
+      {
+        "date": "2026-08-05",
+        "inv": 8000,
+        "val": 8007.5,
+        "bInv": 8000,
+        "bVal": 8136
       }
     ],
     "feesPaidJPY": 8,
     "dividendsJPY": 0,
     "lastTrimMonth": "2026-08",
-    "lastContribDate": "2026-08-04",
+    "lastContribDate": "2026-08-05",
     "taxYear": 2026,
     "ytdRealizedJPY": 0,
     "ytdTaxPaidJPY": 0,
