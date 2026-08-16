@@ -1,5 +1,5 @@
 {
-  "investedJPY": 36000,
+  "investedJPY": 40000,
   "realizedJPY": 0,
   "taxPaidJPY": 0,
   "open": [
@@ -12,8 +12,8 @@
       "buyPriceJPY": 67598.97,
       "peakJPY": 78830.82812,
       "costJPY": 1000,
-      "actionsThru": "2026-08-14",
-      "curValueJPY": 1163.8,
+      "actionsThru": "2026-08-17",
+      "curValueJPY": 1153.8,
       "trailPct": 35
     },
     {
@@ -25,8 +25,8 @@
       "buyPriceJPY": 8385.66,
       "peakJPY": 9867.033399999998,
       "costJPY": 1000,
-      "actionsThru": "2026-08-14",
-      "curValueJPY": 990.2,
+      "actionsThru": "2026-08-17",
+      "curValueJPY": 1115,
       "trailPct": 55
     },
     {
@@ -36,10 +36,10 @@
       "buyDate": "2026-08-04",
       "units": 0.2555697823303457,
       "buyPriceJPY": 3905,
-      "peakJPY": 4080,
+      "peakJPY": 4385,
       "costJPY": 1000,
-      "actionsThru": "2026-08-14",
-      "curValueJPY": 1008.2,
+      "actionsThru": "2026-08-17",
+      "curValueJPY": 1120.7,
       "trailPct": 35
     },
     {
@@ -49,10 +49,10 @@
       "buyDate": "2026-08-04",
       "units": 0.016912827103269773,
       "buyPriceJPY": 59008.47,
-      "peakJPY": 61929.34292999999,
+      "peakJPY": 61946.0972,
       "costJPY": 1000,
-      "actionsThru": "2026-08-14",
-      "curValueJPY": 1037.9,
+      "actionsThru": "2026-08-17",
+      "curValueJPY": 1047.7,
       "trailPct": 35
     },
     {
@@ -64,8 +64,8 @@
       "buyPriceJPY": 4122.79,
       "peakJPY": 4739.31876,
       "costJPY": 3000,
-      "actionsThru": "2026-08-14",
-      "curValueJPY": 3441.7,
+      "actionsThru": "2026-08-17",
+      "curValueJPY": 3387.9,
       "trailPct": 55
     },
     {
@@ -75,10 +75,10 @@
       "buyDate": "2026-08-11",
       "units": 0.2534192593568726,
       "buyPriceJPY": 7876.28,
-      "peakJPY": 8319.71228,
+      "peakJPY": 9368.74016,
       "costJPY": 2000,
-      "actionsThru": "2026-08-14",
-      "curValueJPY": 2108.4,
+      "actionsThru": "2026-08-17",
+      "curValueJPY": 2374.2,
       "trailPct": 55
     },
     {
@@ -88,10 +88,10 @@
       "buyDate": "2026-08-11",
       "units": 0.03251020210779895,
       "buyPriceJPY": 61396.11,
-      "peakJPY": 61929.34292999999,
+      "peakJPY": 61946.0972,
       "costJPY": 2000,
-      "actionsThru": "2026-08-14",
-      "curValueJPY": 1995.1,
+      "actionsThru": "2026-08-17",
+      "curValueJPY": 2013.9,
       "trailPct": 35
     },
     {
@@ -103,8 +103,8 @@
       "buyPriceJPY": 72885.8,
       "peakJPY": 78830.82812,
       "costJPY": 2000,
-      "actionsThru": "2026-08-14",
-      "curValueJPY": 2158.8,
+      "actionsThru": "2026-08-17",
+      "curValueJPY": 2140.1,
       "trailPct": 35
     },
     {
@@ -116,8 +116,8 @@
       "buyPriceJPY": 41511.22,
       "peakJPY": 41511.22118,
       "costJPY": 2000,
-      "actionsThru": "2026-08-14",
-      "curValueJPY": 1933.4,
+      "actionsThru": "2026-08-17",
+      "curValueJPY": 1955.8,
       "trailPct": 35
     },
     {
@@ -127,10 +127,10 @@
       "buyDate": "2026-08-11",
       "units": 0.5091836734693878,
       "buyPriceJPY": 3920,
-      "peakJPY": 3945,
+      "peakJPY": 4385,
       "costJPY": 2000,
-      "actionsThru": "2026-08-14",
-      "curValueJPY": 2008.7,
+      "actionsThru": "2026-08-17",
+      "curValueJPY": 2232.8,
       "trailPct": 35
     },
     {
@@ -142,8 +142,8 @@
       "buyPriceJPY": 8560,
       "peakJPY": 8670,
       "costJPY": 1000,
-      "actionsThru": "2026-08-14",
-      "curValueJPY": 1010.8,
+      "actionsThru": "2026-08-17",
+      "curValueJPY": 992.2,
       "trailPct": 35
     },
     {
@@ -155,8 +155,8 @@
       "buyPriceJPY": 26139.11,
       "peakJPY": 26373.12128,
       "costJPY": 1000,
-      "actionsThru": "2026-08-14",
-      "curValueJPY": 1006.9,
+      "actionsThru": "2026-08-17",
+      "curValueJPY": 972.7,
       "trailPct": 35
     },
     {
@@ -168,8 +168,8 @@
       "buyPriceJPY": 4436,
       "peakJPY": 4953,
       "costJPY": 1000,
-      "actionsThru": "2026-08-14",
-      "curValueJPY": 1114.3,
+      "actionsThru": "2026-08-17",
+      "curValueJPY": 1062.1,
       "trailPct": 35
     },
     {
@@ -181,8 +181,8 @@
       "buyPriceJPY": 5580,
       "peakJPY": 5777,
       "costJPY": 3000,
-      "actionsThru": "2026-08-14",
-      "curValueJPY": 3069.1,
+      "actionsThru": "2026-08-17",
+      "curValueJPY": 3039.6,
       "trailPct": 35
     },
     {
@@ -194,28 +194,28 @@
       "buyPriceJPY": 32945.69,
       "peakJPY": 32945.69157,
       "costJPY": 1000,
-      "actionsThru": "2026-08-14",
-      "curValueJPY": 975.4,
+      "actionsThru": "2026-08-17",
+      "curValueJPY": 982.5,
       "trailPct": 35
     }
   ],
   "closed": [],
   "lastBuyDate": "2026-08-11",
-  "cashJPY": 12000,
+  "cashJPY": 16000,
   "benchmark": {
     "symbol": "NASDAQ:QQQ",
     "name": "ナスダック100(QQQ)",
-    "investedJPY": 36000,
-    "units": 0.31587351781817363,
-    "lastBuyDate": "2026-08-14",
+    "investedJPY": 40000,
+    "units": 0.3502366306917743,
+    "lastBuyDate": "2026-08-17",
     "startDate": "2026-08-02",
-    "lastPriceJPY": 116700.74284,
-    "navDate": "2026-08-14",
-    "valuationJPY": 36862.7,
+    "lastPriceJPY": 116403.88968000001,
+    "navDate": "2026-08-17",
+    "valuationJPY": 40768.9,
     "updated": "2026-08-02"
   },
-  "valuationJPY": 37022.7,
-  "updated": "2026-08-14",
+  "valuationJPY": 41591,
+  "updated": "2026-08-17",
   "history": [
     {
       "date": "2026-08-04",
@@ -279,18 +279,25 @@
       "val": 37022.7,
       "bInv": 36000,
       "bVal": 36862.7
+    },
+    {
+      "date": "2026-08-17",
+      "inv": 40000,
+      "val": 41591,
+      "bInv": 40000,
+      "bVal": 40768.9
     }
   ],
   "feesPaidJPY": 48,
   "dividendsJPY": 0,
   "lastTrimMonth": "2026-08",
-  "lastContribDate": "2026-08-14",
+  "lastContribDate": "2026-08-17",
   "taxYear": 2026,
   "ytdRealizedJPY": 0,
   "ytdTaxPaidJPY": 0,
   "note": "積立シミュレーションはV2.1-NS(完全ノーセル)移行に伴い2026-08-02にリセット。以前の記録はGit履歴に残る。",
   "B": {
-    "investedJPY": 36000,
+    "investedJPY": 40000,
     "realizedJPY": 0,
     "taxPaidJPY": 0,
     "open": [
@@ -303,8 +310,8 @@
         "buyPriceJPY": 1492,
         "peakJPY": 1501,
         "costJPY": 1000,
-        "actionsThru": "2026-08-14",
-        "curValueJPY": 994,
+        "actionsThru": "2026-08-17",
+        "curValueJPY": 1003.4,
         "trailPct": 35
       },
       {
@@ -314,10 +321,10 @@
         "buyDate": "2026-08-04",
         "units": 0.01578412517487672,
         "buyPriceJPY": 63228.08,
-        "peakJPY": 65723.97348,
+        "peakJPY": 66054.0764,
         "costJPY": 1000,
-        "actionsThru": "2026-08-14",
-        "curValueJPY": 1037.4,
+        "actionsThru": "2026-08-17",
+        "curValueJPY": 1042.6,
         "trailPct": 35
       },
       {
@@ -329,8 +336,8 @@
         "buyPriceJPY": 5305,
         "peakJPY": 5704,
         "costJPY": 1000,
-        "actionsThru": "2026-08-14",
-        "curValueJPY": 1059.1,
+        "actionsThru": "2026-08-17",
+        "curValueJPY": 1045.2,
         "trailPct": 35
       },
       {
@@ -342,8 +349,8 @@
         "buyPriceJPY": 1218.5,
         "peakJPY": 1365,
         "costJPY": 1000,
-        "actionsThru": "2026-08-14",
-        "curValueJPY": 1091,
+        "actionsThru": "2026-08-17",
+        "curValueJPY": 1097.1,
         "trailPct": 35
       },
       {
@@ -355,8 +362,8 @@
         "buyPriceJPY": 1501,
         "peakJPY": 1501,
         "costJPY": 2000,
-        "actionsThru": "2026-08-14",
-        "curValueJPY": 1976.1,
+        "actionsThru": "2026-08-17",
+        "curValueJPY": 1994.7,
         "trailPct": 35
       },
       {
@@ -368,8 +375,8 @@
         "buyPriceJPY": 4122.79,
         "peakJPY": 4739.31876,
         "costJPY": 3000,
-        "actionsThru": "2026-08-14",
-        "curValueJPY": 3441.7,
+        "actionsThru": "2026-08-17",
+        "curValueJPY": 3387.9,
         "trailPct": 55
       },
       {
@@ -381,8 +388,8 @@
         "buyPriceJPY": 5580,
         "peakJPY": 5704,
         "costJPY": 2000,
-        "actionsThru": "2026-08-14",
-        "curValueJPY": 2013.9,
+        "actionsThru": "2026-08-17",
+        "curValueJPY": 1987.4,
         "trailPct": 35
       },
       {
@@ -392,10 +399,10 @@
         "buyDate": "2026-08-11",
         "units": 0.03082622846566378,
         "buyPriceJPY": 64750.06,
-        "peakJPY": 65723.97348,
+        "peakJPY": 66054.0764,
         "costJPY": 2000,
-        "actionsThru": "2026-08-14",
-        "curValueJPY": 2026,
+        "actionsThru": "2026-08-17",
+        "curValueJPY": 2036.2,
         "trailPct": 35
       },
       {
@@ -405,10 +412,10 @@
         "buyDate": "2026-08-11",
         "units": 3.305365422830647,
         "buyPriceJPY": 905.8,
-        "peakJPY": 915,
+        "peakJPY": 956.1,
         "costJPY": 3000,
-        "actionsThru": "2026-08-14",
-        "curValueJPY": 2990,
+        "actionsThru": "2026-08-17",
+        "curValueJPY": 3160.3,
         "trailPct": 35
       },
       {
@@ -418,10 +425,10 @@
         "buyDate": "2026-08-11",
         "units": 0.2699851210604626,
         "buyPriceJPY": 7393,
-        "peakJPY": 7479,
+        "peakJPY": 7687,
         "costJPY": 2000,
-        "actionsThru": "2026-08-14",
-        "curValueJPY": 2019.2,
+        "actionsThru": "2026-08-17",
+        "curValueJPY": 2075.4,
         "trailPct": 35
       },
       {
@@ -433,8 +440,8 @@
         "buyPriceJPY": 28124.1,
         "peakJPY": 29998.15016,
         "costJPY": 1000,
-        "actionsThru": "2026-08-14",
-        "curValueJPY": 1064.5,
+        "actionsThru": "2026-08-17",
+        "curValueJPY": 1037.4,
         "trailPct": 35
       },
       {
@@ -444,10 +451,10 @@
         "buyDate": "2026-08-11",
         "units": 0.18546738524437836,
         "buyPriceJPY": 5381,
-        "peakJPY": 6180,
+        "peakJPY": 6479,
         "costJPY": 1000,
-        "actionsThru": "2026-08-14",
-        "curValueJPY": 1146.2,
+        "actionsThru": "2026-08-17",
+        "curValueJPY": 1201.6,
         "trailPct": 35
       },
       {
@@ -459,8 +466,8 @@
         "buyPriceJPY": 8560,
         "peakJPY": 8670,
         "costJPY": 1000,
-        "actionsThru": "2026-08-14",
-        "curValueJPY": 1010.8,
+        "actionsThru": "2026-08-17",
+        "curValueJPY": 992.2,
         "trailPct": 35
       },
       {
@@ -472,8 +479,8 @@
         "buyPriceJPY": 32945.69,
         "peakJPY": 32945.69157,
         "costJPY": 1000,
-        "actionsThru": "2026-08-14",
-        "curValueJPY": 975.4,
+        "actionsThru": "2026-08-17",
+        "curValueJPY": 982.5,
         "trailPct": 35
       },
       {
@@ -483,10 +490,10 @@
         "buyDate": "2026-08-11",
         "units": 0.30151057401812686,
         "buyPriceJPY": 3310,
-        "peakJPY": 3340,
+        "peakJPY": 3365,
         "costJPY": 1000,
-        "actionsThru": "2026-08-14",
-        "curValueJPY": 961.8,
+        "actionsThru": "2026-08-17",
+        "curValueJPY": 1014.6,
         "trailPct": 35
       },
       {
@@ -498,27 +505,27 @@
         "buyPriceJPY": 38193.09,
         "peakJPY": 42710.11136,
         "costJPY": 1000,
-        "actionsThru": "2026-08-14",
-        "curValueJPY": 1108,
+        "actionsThru": "2026-08-17",
+        "curValueJPY": 1081.3,
         "trailPct": 35
       }
     ],
     "closed": [],
     "lastBuyDate": "2026-08-11",
-    "cashJPY": 12000,
+    "cashJPY": 16000,
     "benchmark": {
       "symbol": "NASDAQ:QQQ",
       "name": "ナスダック100(QQQ)",
-      "investedJPY": 36000,
-      "units": 0.31587351781817363,
-      "lastBuyDate": "2026-08-14",
+      "investedJPY": 40000,
+      "units": 0.3502366306917743,
+      "lastBuyDate": "2026-08-17",
       "startDate": "2026-08-04",
-      "lastPriceJPY": 116700.74284,
-      "navDate": "2026-08-14",
-      "valuationJPY": 36862.7
+      "lastPriceJPY": 116403.88968000001,
+      "navDate": "2026-08-17",
+      "valuationJPY": 40768.9
     },
-    "valuationJPY": 36915.1,
-    "updated": "2026-08-14",
+    "valuationJPY": 41139.8,
+    "updated": "2026-08-17",
     "history": [
       {
         "date": "2026-08-04",
@@ -582,12 +589,19 @@
         "val": 36915.1,
         "bInv": 36000,
         "bVal": 36862.7
+      },
+      {
+        "date": "2026-08-17",
+        "inv": 40000,
+        "val": 41139.8,
+        "bInv": 40000,
+        "bVal": 40768.9
       }
     ],
     "feesPaidJPY": 48,
     "dividendsJPY": 0,
     "lastTrimMonth": "2026-08",
-    "lastContribDate": "2026-08-14",
+    "lastContribDate": "2026-08-17",
     "taxYear": 2026,
     "ytdRealizedJPY": 0,
     "ytdTaxPaidJPY": 0,
